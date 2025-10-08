@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { mockLicitacionInfo, mockProductosSolicitados, mockCatalogoProductos } from './data/mockData';
+import { mockLicitacionInfo, mockProductosSolicitados, mockCatalogoProductos, rubros, linea, familia} from './data/mockData';
 import { useClient } from './hooks/useClient';
 
 // --- Iconos (Simulados) ---
@@ -49,7 +49,13 @@ const ProductosSolicitados = ({ items, onSugerenciaClick }) => (
     </div>
 );
 
-const TablaProductos = ({ productos, onAgregar, searchTerm, setSearchTerm }) => {
+const TablaProductos = ({
+    productos, onAgregar, searchTerm, setSearchTerm,
+    selectedRubro, setSelectedRubro,
+    selectedLinea, setSelectedLinea,
+    selectedFamilia, setSelectedFamilia,
+    availableLineas, availableFamilias
+}) => {
     return (
         <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200 flex flex-col min-h-0">
             <h3 className="text-lg font-semibold mb-3">Búsqueda de Productos</h3>
@@ -61,9 +67,43 @@ const TablaProductos = ({ productos, onAgregar, searchTerm, setSearchTerm }) => 
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                 />
-                <select className="p-2 border border-gray-300 rounded-md bg-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"><option>Rubro</option></select>
-                <select className="p-2 border border-gray-300 rounded-md bg-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"><option>Línea</option></select>
-                <select className="p-2 border border-gray-300 rounded-md bg-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"><option>Familia</option></select>
+                {/* Rubro */}
+                <select
+                  className="p-2 border border-gray-300 rounded-md bg-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  value={selectedRubro}
+                  onChange={(e) => setSelectedRubro(e.target.value)}
+                >
+                  <option value="">Rubro</option>
+                  {rubros.map(r => (
+                    <option key={r.id} value={r.id}>{r.nombre}</option>
+                  ))}
+                </select>
+
+                {/* Línea (dependiente de rubro) */}
+                <select
+                  className="p-2 border border-gray-300 rounded-md bg-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  value={selectedLinea}
+                  onChange={(e) => setSelectedLinea(e.target.value)}
+                  disabled={!selectedRubro}
+                >
+                  <option value="">{selectedRubro ? 'Línea' : 'Seleccione rubro'}</option>
+                  {availableLineas.map(l => (
+                    <option key={l.id} value={l.id}>{l.nombre}</option>
+                  ))}
+                </select>
+
+                {/* Familia (dependiente de línea) */}
+                <select
+                  className="p-2 border border-gray-300 rounded-md bg-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  value={selectedFamilia}
+                  onChange={(e) => setSelectedFamilia(e.target.value)}
+                  disabled={!selectedLinea}
+                >
+                  <option value="">{selectedLinea ? 'Familia' : 'Seleccione línea'}</option>
+                  {availableFamilias.map(f => (
+                    <option key={f.id} value={f.id}>{f.nombre}</option>
+                  ))}
+                </select>
             </div>
             <div className="flex-grow overflow-y-auto min-h-0">
                 <table className="w-full text-sm text-left">
@@ -150,11 +190,26 @@ const ResumenCotizacion = ({ items, onRemove }) => {
     );
 };
 
+// Mapea la categoría textual de tus productos a la familiaId definida en mockData.js
+const categoryToFamiliaId = {
+  'Taladros': 'taladros',
+  'Esmeriles': 'esmeriles',
+  'Sierras': 'sierras',
+  'Paneles LED': 'paneles-led',
+  'Tomacorrientes': 'tomacorrientes',
+};
+
 function App() {
     const client = useClient();
     const [itemsCotizacion, setItemsCotizacion] = useState([]);
     const [searchTerm, setSearchTerm] = useState('');
     const [filteredProducts, setFilteredProducts] = useState(mockCatalogoProductos);
+
+    // NUEVO: estado para selects en cascada
+    const [selectedRubro, setSelectedRubro] = useState('');
+    const [selectedLinea, setSelectedLinea] = useState('');
+    const [selectedFamilia, setSelectedFamilia] = useState('');
+
     const mainRef = useRef(null);
 
     // Ajusta dinámicamente la altura del iframe a la altura del contenido en px
@@ -181,15 +236,35 @@ function App() {
     }, [client, itemsCotizacion, filteredProducts, searchTerm]);
 
     useEffect(() => {
-        const lowercasedTerm = searchTerm.toLowerCase();
-        if (lowercasedTerm) {
-            setFilteredProducts(mockCatalogoProductos.filter(p =>
-                p.nombre.toLowerCase().includes(lowercasedTerm) || p.sku.toLowerCase().includes(lowercasedTerm)
-            ));
-        } else {
-            setFilteredProducts(mockCatalogoProductos);
-        }
-    }, [searchTerm]);
+        const lower = searchTerm.toLowerCase();
+
+        // Anota rubro/linea/familia para cada producto a partir de su categoría
+        const withMeta = mockCatalogoProductos.map(p => {
+            const famId = categoryToFamiliaId[p.categoria] || '';
+            const fam = familia.find(f => f.id === famId);
+            const lin = fam ? linea.find(l => l.id === fam.lineaId) : null;
+            const rub = lin ? rubros.find(r => r.id === lin.rubroId) : null;
+            return {
+              ...p,
+              familiaId: fam?.id || '',
+              lineaId: lin?.id || '',
+              rubroId: rub?.id || ''
+            };
+        });
+
+        let result = withMeta.filter(p =>
+          !lower || p.nombre.toLowerCase().includes(lower) || p.sku.toLowerCase().includes(lower)
+        );
+        if (selectedRubro) result = result.filter(p => p.rubroId === selectedRubro);
+        if (selectedLinea) result = result.filter(p => p.lineaId === selectedLinea);
+        if (selectedFamilia) result = result.filter(p => p.familiaId === selectedFamilia);
+
+        setFilteredProducts(result);
+    }, [searchTerm, selectedRubro, selectedLinea, selectedFamilia]);
+
+    // Opciones derivadas para los selects en cascada
+    const availableLineas = selectedRubro ? linea.filter(l => l.rubroId === selectedRubro) : [];
+    const availableFamilias = selectedLinea ? familia.filter(f => f.lineaId === selectedLinea) : [];
 
     const handleSugerenciaClick = (descripcion) => {
         const palabrasClave = descripcion.split(' ').slice(0, 2).join(' ');
@@ -223,6 +298,16 @@ function App() {
                     onAgregar={handleAgregarProducto}
                     searchTerm={searchTerm}
                     setSearchTerm={setSearchTerm}
+
+                    // NUEVO: props para selects en cascada
+                    selectedRubro={selectedRubro}
+                    setSelectedRubro={(val) => { setSelectedRubro(val); setSelectedLinea(''); setSelectedFamilia(''); }}
+                    selectedLinea={selectedLinea}
+                    setSelectedLinea={(val) => { setSelectedLinea(val); setSelectedFamilia(''); }}
+                    selectedFamilia={selectedFamilia}
+                    setSelectedFamilia={setSelectedFamilia}
+                    availableLineas={availableLineas}
+                    availableFamilias={availableFamilias}
                   />
                 </div>
             </div>
