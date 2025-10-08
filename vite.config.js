@@ -7,6 +7,7 @@ import StaticCopy from './rollup/static-copy-plugin'
 import { defineConfig, loadEnv } from 'vite'
 import { changeLocation } from './rollup/modifiers/manifest'
 import process from 'node:process'
+import tailwindcss from '@tailwindcss/vite'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
@@ -17,6 +18,7 @@ export default ({ mode }) => {
     base: './',
     plugins: [
       react(),
+      tailwindcss(),
       TranslationsLoader(),
       StaticCopy({
         targets: [

@@ -1,7 +1,4 @@
-/*
-  Estilos para el Addon de Cotizaciones de Zendesk
-  Diseño de dos columnas basado en el mockup.
-*/
+@import "tailwindcss";
 
 :root {
   --font-family-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
