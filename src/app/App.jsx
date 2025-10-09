@@ -8,7 +8,8 @@ import HeaderInfo from './components/HeaderInfo';
 import ProductosSolicitados from './components/ProductosSolicitados';
 import TablaProductos from './components/TablaProductos';
 import ResumenCotizacion from './components/ResumenCotizacion';
-import SaveConfirmation from './components/SaveConfirmation';
+import StockModal from './components/StockModal';
+import SaveConfirmation from './components/SaveConfirmation'; // <-- Se importa el componente del toast
 
 const ITEMS_PER_PAGE = 10;
 
@@ -17,7 +18,9 @@ function App() {
   const [itemsCotizacion, setItemsCotizacion] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
-  // Estado para manejar la animación del toast
+  const [modalStockData, setModalStockData] = useState(null);
+  
+  // --- ESTADO PARA LA ANIMACIÓN DEL TOAST ---
   const [toastState, setToastState] = useState('idle'); // 'idle', 'visible', 'exiting'
 
   const {
@@ -61,61 +64,63 @@ function App() {
   const handleQuitarProducto = useCallback((sku) => {
     setItemsCotizacion(prev => prev.filter(i => i.sku !== sku));
   }, []);
+  
+  const handleShowStock = useCallback((producto) => {
+    setModalStockData(producto);
+  }, []);
+
+  const handleCloseStock = useCallback(() => {
+    setModalStockData(null);
+  }, []);
 
   // --- FUNCIÓN PARA GUARDAR PROGRESO CON ANIMACIÓN ---
   const handleSaveProgress = useCallback(() => {
     console.log("Guardando progreso...", itemsCotizacion);
-    // En un futuro, aquí iría la llamada a la API de Spring Boot
-    
-    // 1. Muestra el toast (lo hace visible y desliza hacia la izquierda)
     setToastState('visible');
-    
-    // 2. Después de 4.5s, inicia la animación de salida
-    setTimeout(() => {
-      setToastState('exiting');
-    }, 4500); // 4.5s visible + 0.5s de animación de salida = 5s
-
-    // 3. A los 5s, lo elimina completamente del DOM
-    setTimeout(() => {
-      setToastState('idle');
-    }, 5000);
+    setTimeout(() => setToastState('exiting'), 4500);
+    setTimeout(() => setToastState('idle'), 5000);
   }, [itemsCotizacion]);
-  
+
   useEffect(() => {
     setCurrentPage(1);
   }, [searchTerm, selectedRubro, selectedLinea, selectedFamilia]);
 
   return (
-    <main ref={mainRef} className="bg-gray-100 p-6 grid grid-cols-3 gap-6 font-sans">
-      <div className="col-span-2 flex flex-col gap-6">
-        <HeaderInfo info={mockLicitacionInfo} />
-        <ProductosSolicitados items={mockProductosSolicitados} onSugerenciaClick={handleSugerenciaClick} />
-        <TablaProductos
-            productos={paginatedProducts}
-            onAgregar={handleAgregarProducto}
-            // No olvides pasar onStockClick si lo sigues usando
-            searchTerm={searchTerm}
-            setSearchTerm={setSearchTerm}
-            selectedRubro={selectedRubro}
-            setSelectedRubro={(val) => { setSelectedRubro(val); setSelectedLinea(''); setSelectedFamilia(''); }}
-            selectedLinea={selectedLinea}
-            setSelectedLinea={(val) => { setSelectedLinea(val); setSelectedFamilia(''); }}
-            selectedFamilia={selectedFamilia}
-            setSelectedFamilia={setSelectedFamilia}
-            availableLineas={availableLineas}
-            availableFamilias={availableFamilias}
-            currentPage={currentPage}
-            totalPages={totalPages}
-            onPageChange={handlePageChange}
-        />
-      </div>
-      <div className="col-span-1">
-        <ResumenCotizacion items={itemsCotizacion} onRemove={handleQuitarProducto} onSave={handleSaveProgress} />
-      </div>
+    <>
+      <main ref={mainRef} className="bg-gray-100 p-6 grid grid-cols-3 gap-6 font-sans">
+        <div className="col-span-2 flex flex-col gap-6">
+          <HeaderInfo info={mockLicitacionInfo} />
+          <ProductosSolicitados items={mockProductosSolicitados} onSugerenciaClick={handleSugerenciaClick} />
+          <TablaProductos
+              productos={paginatedProducts}
+              onAgregar={handleAgregarProducto}
+              onStockClick={handleShowStock}
+              searchTerm={searchTerm}
+              setSearchTerm={setSearchTerm}
+              selectedRubro={selectedRubro}
+              setSelectedRubro={(val) => { setSelectedRubro(val); setSelectedLinea(''); setSelectedFamilia(''); }}
+              selectedLinea={selectedLinea}
+              setSelectedLinea={(val) => { setSelectedLinea(val); setSelectedFamilia(''); }}
+              selectedFamilia={selectedFamilia}
+              setSelectedFamilia={setSelectedFamilia}
+              availableLineas={availableLineas}
+              availableFamilias={availableFamilias}
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPageChange={handlePageChange}
+          />
+        </div>
+        <div className="col-span-1">
+          {/* Se pasa la nueva función onSave al componente */}
+          <ResumenCotizacion items={itemsCotizacion} onRemove={handleQuitarProducto} onSave={handleSaveProgress} />
+        </div>
+      </main>
 
-      {/* Renderiza el toast solo cuando no está 'idle' */}
+      <StockModal producto={modalStockData} onClose={handleCloseStock} />
+      
+      {/* Se renderiza el toast solo cuando no está 'idle' */}
       {toastState !== 'idle' && <SaveConfirmation toastState={toastState} />}
-    </main>
+    </>
   );
 }
 
