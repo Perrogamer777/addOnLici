@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useMemo, useEffect } from 'react';
 import { mockLicitacionInfo, mockProductosSolicitados, mockCatalogoProductos } from './data/mockData';
 import { useClient } from './hooks/useClient';
 import { useCatalogFilters } from './hooks/useCatalogFilters';
@@ -8,11 +8,16 @@ import HeaderInfo from './components/HeaderInfo';
 import ProductosSolicitados from './components/ProductosSolicitados';
 import TablaProductos from './components/TablaProductos';
 import ResumenCotizacion from './components/ResumenCotizacion';
+import StockModal from './components/StockModal'; // Se importa el Modal
+
+const ITEMS_PER_PAGE = 7;
 
 function App() {
   const client = useClient();
   const [itemsCotizacion, setItemsCotizacion] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [modalStockData, setModalStockData] = useState(null); // Estado para el modal
 
   const {
     filteredProducts,
@@ -23,11 +28,24 @@ function App() {
   } = useCatalogFilters(mockCatalogoProductos, searchTerm);
 
   const mainRef = useRef(null);
-  useIframeAutoResize(client, mainRef, [itemsCotizacion, filteredProducts, searchTerm]);
+  useIframeAutoResize(client, mainRef, [itemsCotizacion, filteredProducts, currentPage]); 
+
+  const totalPages = Math.ceil(filteredProducts.length / ITEMS_PER_PAGE);
+  const paginatedProducts = useMemo(() => {
+    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+    return filteredProducts.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+  }, [filteredProducts, currentPage]);
+
+  const handlePageChange = (newPage) => {
+    if (newPage > 0 && newPage <= totalPages) {
+      setCurrentPage(newPage);
+    }
+  };
 
   const handleSugerenciaClick = useCallback((descripcion) => {
     const palabrasClave = descripcion.split(' ').slice(0, 2).join(' ');
     setSearchTerm(palabrasClave);
+    setCurrentPage(1);
   }, []);
 
   const handleAgregarProducto = useCallback((producto, cantidad) => {
@@ -41,34 +59,50 @@ function App() {
   const handleQuitarProducto = useCallback((sku) => {
     setItemsCotizacion(prev => prev.filter(i => i.sku !== sku));
   }, []);
+  
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, selectedRubro, selectedLinea, selectedFamilia]);
+  
+  // Funciones para manejar el modal
+  const handleShowStock = (producto) => setModalStockData(producto);
+  const handleCloseStock = () => setModalStockData(null);
 
   return (
-    <main ref={mainRef} className="bg-gray-100 p-6 grid grid-cols-3 gap-6 font-sans h-full min-h-0">
-      <div className="col-span-2 flex flex-col gap-6 min-h-0">
-        <HeaderInfo info={mockLicitacionInfo} />
-        <div className="grid gap-6 flex-1 min-h-0" style={{ gridTemplateRows: 'minmax(0,1fr) minmax(0,2fr)' }}>
+    <>
+      <main ref={mainRef} className="bg-gray-100 p-6 grid grid-cols-3 gap-6 font-sans">
+        <div className="col-span-2 flex flex-col gap-6">
+          <HeaderInfo info={mockLicitacionInfo} />
           <ProductosSolicitados items={mockProductosSolicitados} onSugerenciaClick={handleSugerenciaClick} />
           <TablaProductos
-            productos={filteredProducts}
-            onAgregar={handleAgregarProducto}
-            searchTerm={searchTerm}
-            setSearchTerm={setSearchTerm}
-            selectedRubro={selectedRubro}
-            setSelectedRubro={(val) => { setSelectedRubro(val); setSelectedLinea(''); setSelectedFamilia(''); }}
-            selectedLinea={selectedLinea}
-            setSelectedLinea={(val) => { setSelectedLinea(val); setSelectedFamilia(''); }}
-            selectedFamilia={selectedFamilia}
-            setSelectedFamilia={setSelectedFamilia}
-            availableLineas={availableLineas}
-            availableFamilias={availableFamilias}
+              productos={paginatedProducts}
+              onAgregar={handleAgregarProducto}
+              onStockClick={handleShowStock} // Se pasa la función para abrir el modal
+              searchTerm={searchTerm}
+              setSearchTerm={setSearchTerm}
+              selectedRubro={selectedRubro}
+              setSelectedRubro={(val) => { setSelectedRubro(val); setSelectedLinea(''); setSelectedFamilia(''); }}
+              selectedLinea={selectedLinea}
+              setSelectedLinea={(val) => { setSelectedLinea(val); setSelectedFamilia(''); }}
+              selectedFamilia={selectedFamilia}
+              setSelectedFamilia={setSelectedFamilia}
+              availableLineas={availableLineas}
+              availableFamilias={availableFamilias}
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPageChange={handlePageChange}
           />
         </div>
-      </div>
-      <div className="col-span-1 min-h-0">
-        <ResumenCotizacion items={itemsCotizacion} onRemove={handleQuitarProducto} />
-      </div>
-    </main>
+        <div className="col-span-1">
+          <ResumenCotizacion items={itemsCotizacion} onRemove={handleQuitarProducto} />
+        </div>
+      </main>
+      
+      {/* Se renderiza el modal aquí */}
+      <StockModal producto={modalStockData} onClose={handleCloseStock} />
+    </>
   );
 }
 
 export default App;
+

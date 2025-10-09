@@ -2,14 +2,15 @@ import FilaProducto from './FilaProducto';
 import { rubros } from '../data/mockData';
 
 export default function TablaProductos({
-  productos, onAgregar, searchTerm, setSearchTerm,
+  productos, onAgregar, onStockClick, searchTerm, setSearchTerm,
   selectedRubro, setSelectedRubro,
   selectedLinea, setSelectedLinea,
   selectedFamilia, setSelectedFamilia,
-  availableLineas, availableFamilias
+  availableLineas, availableFamilias,
+  currentPage, totalPages, onPageChange
 }) {
   return (
-    <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200 flex flex-col min-h-0">
+    <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200 flex flex-col">
       <h3 className="text-lg font-semibold mb-3">Búsqueda de Productos</h3>
       <div className="flex items-center gap-3 mb-4">
         <input
@@ -46,29 +47,49 @@ export default function TablaProductos({
           {availableFamilias.map(f => (<option key={f.id} value={f.id}>{f.nombre}</option>))}
         </select>
       </div>
-      <div className="flex-grow overflow-y-auto min-h-0">
-        <table className="w-full text-sm text-left">
-          <thead className="bg-gray-50 text-xs text-gray-600 uppercase sticky top-0">
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm text-left table-fixed">
+          <thead className="bg-gray-50 text-xs text-gray-600 uppercase">
             <tr>
-              <th className="p-3">SKU</th>
-              <th className="p-3">Nombre</th>
-              <th className="p-3">Marca</th>
-              <th className="p-3">Categoría</th>
-              <th className="p-3">Precio</th>
-              <th className="p-3">Stock</th>
-              <th className="p-3">Acciones</th>
+              <th className="p-3 w-1/6">SKU</th>
+              <th className="p-3 w-2/6">Nombre</th>
+              <th className="p-3 w-1/6">Marca</th>
+              <th className="p-3 w-1/6">Categoría</th>
+              <th className="p-3 w-1/12">Precio</th>
+              <th className="p-3 w-1/12">Stock</th>
+              <th className="p-3 w-1/4">Acciones</th>
             </tr>
           </thead>
+        </table>
+      </div>
+      <div className="overflow-y-auto" style={{ height: '300px' }}>
+        <table className="w-full text-sm text-left ">
           <tbody className="divide-y divide-gray-200">
-            {productos.map(p => (<FilaProducto key={p.sku} producto={p} onAgregar={onAgregar} />))}
+            {productos.map(p => (<FilaProducto key={p.sku} producto={p} onAgregar={onAgregar} onStockClick={onStockClick}/>))}
           </tbody>
         </table>
       </div>
+      {/* Paginación funcional */}
       <div className="flex justify-center items-center mt-4 text-sm">
-        <button type="button" className="px-3 py-1 border rounded-md hover:bg-gray-100">Anterior</button>
-        <span className="px-3">Página 1 de 10</span>
-        <button type="button" className="px-3 py-1 border rounded-md hover:bg-gray-100">Siguiente</button>
+        <button
+          type="button"
+          className="px-3 py-1 border rounded-md hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
+          onClick={() => onPageChange(currentPage - 1)}
+          disabled={currentPage === 1}
+        >
+          Anterior
+        </button>
+        <span className="px-3">Página {currentPage} de {totalPages}</span>
+        <button
+          type="button"
+          className="px-3 py-1 border rounded-md hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
+          onClick={() => onPageChange(currentPage + 1)}
+          disabled={currentPage === totalPages}
+        >
+          Siguiente
+        </button>
       </div>
     </div>
   );
 }
+
