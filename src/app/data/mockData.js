@@ -1,7 +1,9 @@
 export const mockLicitacionInfo = {
   id: 'LIC-6927',
   cliente: {
-    nombre: 'Carnes Ñuble S.A'
+    nombre: 'Carnes Ñuble S.A.',
+    rut: '76.999.888-0',
+    comentarios: 'Precio final debe incluir producto puesto en planta, Av Balmaceda 8010, Valdivia, región LOS RIOS.'
   },
   fechaCierre: '31/10/2024',
 };
@@ -23,6 +25,25 @@ export const mockProductosSolicitados = [
     categoria: 'Esmeriles'
   },
   { 
+    id: 'REQ-003', 
+    unidades: 10, 
+    descripcion: 'Sierra Circular 7 1/4" 1500W',
+    sku: '55432M',
+    categoria: 'Sierras'
+  },
+    { 
+    id: 'REQ-003', 
+    unidades: 10, 
+    descripcion: 'Sierra Circular 7 1/4" 1500W',
+    sku: '55432M',
+    categoria: 'Sierras'
+  },  { 
+    id: 'REQ-003', 
+    unidades: 10, 
+    descripcion: 'Sierra Circular 7 1/4" 1500W',
+    sku: '55432M',
+    categoria: 'Sierras'
+  },  { 
     id: 'REQ-003', 
     unidades: 10, 
     descripcion: 'Sierra Circular 7 1/4" 1500W',

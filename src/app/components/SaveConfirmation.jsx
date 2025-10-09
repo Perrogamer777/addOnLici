@@ -1,7 +1,7 @@
 import React from 'react';
 
 export default function SaveConfirmation({ toastState }) {
-  // Determina la clase de animación basada en el estado recibido
+  
   const animationClass = toastState === 'visible'
     ? 'translate-x-0'  
     : 'translate-x-full'; 

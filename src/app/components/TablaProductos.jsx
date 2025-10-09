@@ -62,7 +62,7 @@ export default function TablaProductos({
           </thead>
         </table>
       </div>
-      <div className="overflow-y-auto" style={{ height: '300px' }}>
+      <div className="overflow-y-auto" style={{ height: '280px' }}>
         <table className="w-full text-sm text-left ">
           <tbody className="divide-y divide-gray-200">
             {productos.map(p => (<FilaProducto key={p.sku} producto={p} onAgregar={onAgregar} onStockClick={onStockClick}/>))}

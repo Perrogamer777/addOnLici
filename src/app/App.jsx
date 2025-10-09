@@ -9,9 +9,9 @@ import ProductosSolicitados from './components/ProductosSolicitados';
 import TablaProductos from './components/TablaProductos';
 import ResumenCotizacion from './components/ResumenCotizacion';
 import StockModal from './components/StockModal';
-import SaveConfirmation from './components/SaveConfirmation'; // <-- Se importa el componente del toast
+import SaveConfirmation from './components/SaveConfirmation';
 
-const ITEMS_PER_PAGE = 10;
+const ITEMS_PER_PAGE = 7;
 
 function App() {
   const client = useClient();
@@ -19,9 +19,7 @@ function App() {
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [modalStockData, setModalStockData] = useState(null);
-  
-  // --- ESTADO PARA LA ANIMACIÓN DEL TOAST ---
-  const [toastState, setToastState] = useState('idle'); // 'idle', 'visible', 'exiting'
+  const [toastState, setToastState] = useState('idle');
 
   const {
     filteredProducts,
@@ -37,19 +35,15 @@ function App() {
   const totalPages = Math.ceil(filteredProducts.length / ITEMS_PER_PAGE);
   const paginatedProducts = useMemo(() => {
     const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-    const endIndex = startIndex + ITEMS_PER_PAGE;
-    return filteredProducts.slice(startIndex, endIndex);
+    return filteredProducts.slice(startIndex, startIndex + ITEMS_PER_PAGE);
   }, [filteredProducts, currentPage]);
 
   const handlePageChange = (newPage) => {
-    if (newPage > 0 && newPage <= totalPages) {
-      setCurrentPage(newPage);
-    }
+    if (newPage > 0 && newPage <= totalPages) setCurrentPage(newPage);
   };
 
   const handleSugerenciaClick = useCallback((descripcion) => {
-    const palabrasClave = descripcion.split(' ').slice(0, 2).join(' ');
-    setSearchTerm(palabrasClave);
+    setSearchTerm(descripcion.split(' ').slice(0, 2).join(' '));
     setCurrentPage(1);
   }, []);
 
@@ -64,18 +58,11 @@ function App() {
   const handleQuitarProducto = useCallback((sku) => {
     setItemsCotizacion(prev => prev.filter(i => i.sku !== sku));
   }, []);
-  
-  const handleShowStock = useCallback((producto) => {
-    setModalStockData(producto);
-  }, []);
 
-  const handleCloseStock = useCallback(() => {
-    setModalStockData(null);
-  }, []);
+  const handleShowStock = useCallback((producto) => setModalStockData(producto), []);
+  const handleCloseStock = useCallback(() => setModalStockData(null), []);
 
-  // --- FUNCIÓN PARA GUARDAR PROGRESO CON ANIMACIÓN ---
   const handleSaveProgress = useCallback(() => {
-    console.log("Guardando progreso...", itemsCotizacion);
     setToastState('visible');
     setTimeout(() => setToastState('exiting'), 4500);
     setTimeout(() => setToastState('idle'), 5000);
@@ -87,38 +74,46 @@ function App() {
 
   return (
     <>
-      <main ref={mainRef} className="bg-gray-100 p-6 grid grid-cols-3 gap-6 font-sans">
-        <div className="col-span-2 flex flex-col gap-6">
-          <HeaderInfo info={mockLicitacionInfo} />
-          <ProductosSolicitados items={mockProductosSolicitados} onSugerenciaClick={handleSugerenciaClick} />
-          <TablaProductos
-              productos={paginatedProducts}
-              onAgregar={handleAgregarProducto}
-              onStockClick={handleShowStock}
-              searchTerm={searchTerm}
-              setSearchTerm={setSearchTerm}
-              selectedRubro={selectedRubro}
-              setSelectedRubro={(val) => { setSelectedRubro(val); setSelectedLinea(''); setSelectedFamilia(''); }}
-              selectedLinea={selectedLinea}
-              setSelectedLinea={(val) => { setSelectedLinea(val); setSelectedFamilia(''); }}
-              selectedFamilia={selectedFamilia}
-              setSelectedFamilia={setSelectedFamilia}
-              availableLineas={availableLineas}
-              availableFamilias={availableFamilias}
-              currentPage={currentPage}
-              totalPages={totalPages}
-              onPageChange={handlePageChange}
-          />
-        </div>
-        <div className="col-span-1">
-          {/* Se pasa la nueva función onSave al componente */}
-          <ResumenCotizacion items={itemsCotizacion} onRemove={handleQuitarProducto} onSave={handleSaveProgress} />
+      {/* Contenedor principal con grid de 3 filas */}
+      <main ref={mainRef} className="bg-gray-100 p-6 font-sans h-screen flex flex-col gap-6">
+        {/* Header que ocupa todo el ancho */}
+        <HeaderInfo info={mockLicitacionInfo} />
+        
+        {/* Grid de 2 columnas para el contenido principal */}
+        <div className="flex gap-6 flex-1 min-h-0">
+          {/* Columna izquierda con productos solicitados y búsqueda */}
+          <div className="w-2/3 flex flex-col gap-6 min-h-0">
+            <ProductosSolicitados items={mockProductosSolicitados} onSugerenciaClick={handleSugerenciaClick} />
+            {/* Este div permite que la tabla crezca para ocupar el espacio restante */}
+            <div className="flex-grow min-h-0">
+              <TablaProductos
+                productos={paginatedProducts}
+                onAgregar={handleAgregarProducto}
+                onStockClick={handleShowStock}
+                searchTerm={searchTerm}
+                setSearchTerm={setSearchTerm}
+                selectedRubro={selectedRubro}
+                setSelectedRubro={(val) => { setSelectedRubro(val); setSelectedLinea(''); setSelectedFamilia(''); }}
+                selectedLinea={selectedLinea}
+                setSelectedLinea={(val) => { setSelectedLinea(val); setSelectedFamilia(''); }}
+                selectedFamilia={selectedFamilia}
+                setSelectedFamilia={setSelectedFamilia}
+                availableLineas={availableLineas}
+                availableFamilias={availableFamilias}
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onPageChange={handlePageChange}
+              />
+            </div>
+          </div>
+          
+          {/* Columna derecha con resumen de cotización */}
+          <div className="w-1/3 min-h-0">
+            <ResumenCotizacion items={itemsCotizacion} onRemove={handleQuitarProducto} onSave={handleSaveProgress} />
+          </div>
         </div>
       </main>
-
       <StockModal producto={modalStockData} onClose={handleCloseStock} />
-      
-      {/* Se renderiza el toast solo cuando no está 'idle' */}
       {toastState !== 'idle' && <SaveConfirmation toastState={toastState} />}
     </>
   );
