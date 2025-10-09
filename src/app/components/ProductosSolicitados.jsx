@@ -9,7 +9,7 @@ export default function ProductosSolicitados({ items, onSugerenciaClick }) {
               <th className="p-3 w-1/6">SKU Ref.</th>
               <th className="p-3 w-2/5">Descripción Solicitada</th>
               <th className="p-3 w-1/6">Categoría</th>
-              <th className="p-3 w-1/12 text-center">Unidades</th>
+              <th className="p-3 w-1/12 text-center">Unidades solicitadas</th>
               <th className="p-3 w-1/5 text-center">Acciones</th>
             </tr>
           </thead>
