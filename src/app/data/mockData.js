@@ -8,7 +8,7 @@ export const mockLicitacionInfo = {
   fechaCierre: '31/10/2024',
 };
 
-// Datos para la lista de "Productos Solicitados"
+// Datos para Productos Solicitados
 export const mockProductosSolicitados = [
   { 
     id: 'REQ-001', 
@@ -54,7 +54,7 @@ export const mockProductosSolicitados = [
   
 ];
 
-// Datos para la tabla de "Búsqueda de Productos"
+// Datos para Busqueda de Productos
 export const mockCatalogoProductos = [
   {
     sku: '41298U',

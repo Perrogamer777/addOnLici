@@ -18,7 +18,7 @@ export default function ProductosSolicitados({ items, onSugerenciaClick }) {
               <th className="p-3">SKU Ref.</th>
               <th className="p-3">Descripción Solicitada</th>
               <th className="p-3">Categoría</th>
-              <th className="p-3">Unidades</th>
+              <th className="p-3">Uni. Solicitadas</th>
               <th className="p-3">Acciones</th>
             </tr>
           </thead>
@@ -55,7 +55,7 @@ export default function ProductosSolicitados({ items, onSugerenciaClick }) {
           <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"></path>
           </svg>
-          Desliza para ver todos los productos
+          Deslizar para ver todos los productos
         </div>
       )}
     </div>

@@ -4,6 +4,7 @@ import { useClient } from './hooks/useClient';
 import { useCatalogFilters } from './hooks/useCatalogFilters';
 import { useIframeAutoResize } from './hooks/useIframeAutoResize';
 
+
 import HeaderInfo from './components/HeaderInfo';
 import ProductosSolicitados from './components/ProductosSolicitados';
 import TablaProductos from './components/TablaProductos';
@@ -11,7 +12,8 @@ import ResumenCotizacion from './components/ResumenCotizacion';
 import StockModal from './components/StockModal';
 import SaveConfirmation from './components/SaveConfirmation';
 
-const ITEMS_PER_PAGE = 7;
+
+const itemsPorPagina = 10;
 
 function App() {
   const client = useClient();
@@ -20,6 +22,7 @@ function App() {
   const [currentPage, setCurrentPage] = useState(1);
   const [modalStockData, setModalStockData] = useState(null);
   const [toastState, setToastState] = useState('idle');
+  const [isMobile, setIsMobile] = useState(false);
 
   const {
     filteredProducts,
@@ -30,12 +33,23 @@ function App() {
   } = useCatalogFilters(mockCatalogoProductos, searchTerm);
 
   const mainRef = useRef(null);
-  useIframeAutoResize(client, mainRef, [itemsCotizacion, filteredProducts, currentPage]);
+  useIframeAutoResize(client, mainRef, [itemsCotizacion, filteredProducts, currentPage, isMobile]);
 
-  const totalPages = Math.ceil(filteredProducts.length / ITEMS_PER_PAGE);
+  // Detectar tamaño de pantalla
+  useEffect(() => {
+    const checkScreenSize = () => {
+      setIsMobile(window.innerWidth < 1024); 
+    };
+    
+    checkScreenSize();
+    window.addEventListener('resize', checkScreenSize);
+    return () => window.removeEventListener('resize', checkScreenSize);
+  }, []);
+
+  const totalPages = Math.ceil(filteredProducts.length / itemsPorPagina);
   const paginatedProducts = useMemo(() => {
-    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-    return filteredProducts.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+    const startIndex = (currentPage - 1) * itemsPorPagina;
+    return filteredProducts.slice(startIndex, startIndex + itemsPorPagina);
   }, [filteredProducts, currentPage]);
 
   const handlePageChange = (newPage) => {
@@ -68,23 +82,31 @@ function App() {
     setTimeout(() => setToastState('idle'), 5000);
   }, [itemsCotizacion]);
 
+  const handleUpdateCantidad = useCallback((sku, nuevaCantidad) => {
+    setItemsCotizacion(prev => 
+      prev.map(item => 
+        item.sku === sku 
+          ? { ...item, cantidad: nuevaCantidad }
+          : item
+      )
+    );
+  }, []);
+
   useEffect(() => {
     setCurrentPage(1);
   }, [searchTerm, selectedRubro, selectedLinea, selectedFamilia]);
 
   return (
     <>
-      {/* Contenedor principal con grid de 3 filas */}
-      <main ref={mainRef} className="bg-gray-100 p-6 font-sans h-screen flex flex-col gap-6">
-        {/* Header que ocupa todo el ancho */}
+      <main ref={mainRef} className="bg-gray-100 p-3 lg:p-6 font-sans min-h-screen flex flex-col gap-3 lg:gap-6">
+        {/* Header responsivo */}
         <HeaderInfo info={mockLicitacionInfo} />
         
-        {/* Grid de 2 columnas para el contenido principal */}
-        <div className="flex gap-6 flex-1 min-h-0">
-          {/* Columna izquierda con productos solicitados y búsqueda */}
-          <div className="w-2/3 flex flex-col gap-6 min-h-0">
+        <div className={`flex gap-3 lg:gap-6 flex-1 min-h-0 ${isMobile ? 'flex-col' : ''}`}>
+          {/* Columna izquierda */}
+          <div className={`flex flex-col gap-3 lg:gap-6 min-h-0 ${isMobile ? 'w-full' : 'w-2/3'}`}>
             <ProductosSolicitados items={mockProductosSolicitados} onSugerenciaClick={handleSugerenciaClick} />
-            {/* Este div permite que la tabla crezca para ocupar el espacio restante */}
+            
             <div className="flex-grow min-h-0">
               <TablaProductos
                 productos={paginatedProducts}
@@ -103,18 +125,23 @@ function App() {
                 currentPage={currentPage}
                 totalPages={totalPages}
                 onPageChange={handlePageChange}
+                isMobile={isMobile}
               />
             </div>
           </div>
           
-          {/* Columna derecha con resumen de cotización */}
-          <div className="w-1/3 min-h-0">
-            <ResumenCotizacion items={itemsCotizacion} onRemove={handleQuitarProducto} onSave={handleSaveProgress} />
+          {/* Columna derecha - se mueve arriba en móvil si hay items */}
+          <div className={`min-h-0 ${isMobile ? 'w-full order-first' : 'w-1/3'} ${isMobile && itemsCotizacion.length === 0 ? 'hidden' : ''}`}>
+            <ResumenCotizacion 
+              items={itemsCotizacion} 
+              onRemove={handleQuitarProducto} 
+              onSave={handleSaveProgress}
+              onUpdateCantidad={handleUpdateCantidad}
+              isMobile={isMobile}
+            />
           </div>
         </div>
       </main>
-      <StockModal producto={modalStockData} onClose={handleCloseStock} />
-      {toastState !== 'idle' && <SaveConfirmation toastState={toastState} />}
     </>
   );
 }
