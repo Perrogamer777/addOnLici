@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 
 const TrashIcon = () => <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>;
 
-export default function ResumenCotizacion({ items, onRemove, onSave, onUpdateCantidad, onGenerarCotizacion }) {
+export default function ResumenCotizacion({ items, onRemove, onSave, onUpdateCantidad, onOpenModalGenerarCotizacion, isMobile }) {
     const neto = items.reduce((acc, item) => acc + (item.precioUnitario * item.cantidad), 0);
     const iva = neto * 0.19;
     const total = neto + iva;
@@ -10,7 +10,6 @@ export default function ResumenCotizacion({ items, onRemove, onSave, onUpdateCan
     const [showAdded, setShowAdded] = useState(false);
     const prevItemsLength = useRef(items.length);
 
-    //  para detectar cuando se agrega un nuevo producto
     useEffect(() => {
         if (items.length > prevItemsLength.current) {
             setShowAdded(true);
@@ -35,7 +34,7 @@ export default function ResumenCotizacion({ items, onRemove, onSave, onUpdateCan
             alert('Agrega al menos un producto para generar la cotización');
             return;
         }
-        onGenerarCotizacion(); // Llamar a la función del padre
+        onOpenModalGenerarCotizacion();
     };
 
     return (

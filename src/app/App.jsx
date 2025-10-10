@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback, useMemo, useEffect } from 'react';
+import React, { useState, useRef, useCallback, useMemo, useEffect, use } from 'react';
 import { mockLicitacionInfo, mockProductosSolicitados, mockCatalogoProductos } from './data/mockData';
 import { useClient } from './hooks/useClient';
 import { useCatalogFilters } from './hooks/useCatalogFilters';
@@ -11,7 +11,7 @@ import TablaProductos from './components/TablaProductos';
 import ResumenCotizacion from './components/ResumenCotizacion';
 import StockModal from './components/StockModal';
 import SaveConfirmation from './components/SaveConfirmation';
-
+import ModalGenerarCotizacion from './components/ModalGenerarCotizacion';
 
 const itemsPorPagina = 10;
 
@@ -23,6 +23,7 @@ function App() {
   const [modalStockData, setModalStockData] = useState(null);
   const [toastState, setToastState] = useState('idle');
   const [isMobile, setIsMobile] = useState(false);
+  const [showModalGenerarCotizacion, setShowModalGenerarCotizacion] = useState(false);
 
   const {
     filteredProducts,
@@ -34,6 +35,20 @@ function App() {
 
   const mainRef = useRef(null);
   useIframeAutoResize(client, mainRef, [itemsCotizacion, filteredProducts, currentPage, isMobile]);
+
+  const handleConfirmSend = useCallback(() => {
+
+    console.log('Cotización enviada:', { 
+      licitacionInfo: mockLicitacionInfo, 
+      items: itemsCotizacion 
+    });
+    
+    setShowModalGenerarCotizacion(false);
+    setToastState('visible');
+    setTimeout(() => setToastState('exiting'), 4500);
+    setTimeout(() => setToastState('idle'), 5000);
+    setItemsCotizacion([]);
+  }, [itemsCotizacion]);
 
   // Detectar tamaño de pantalla
   useEffect(() => {
@@ -130,13 +145,14 @@ function App() {
             </div>
           </div>
           
-          {/* Columna derecha - se mueve arriba en móvil si hay items */}
+          {/* Columna derecha - se mueve arriba si hay items */}
           <div className={`min-h-0 ${isMobile ? 'w-full order-first' : 'w-1/3'} ${isMobile && itemsCotizacion.length === 0 ? 'hidden' : ''}`}>
             <ResumenCotizacion 
               items={itemsCotizacion} 
               onRemove={handleQuitarProducto} 
               onSave={handleSaveProgress}
               onUpdateCantidad={handleUpdateCantidad}
+              onOpenModalGenerarCotizacion={() => setShowModalGenerarCotizacion(true)}
               isMobile={isMobile}
             />
           </div>
@@ -146,6 +162,13 @@ function App() {
       {/* Modales */}
       <StockModal producto={modalStockData} onClose={handleCloseStock} />
       {toastState !== 'idle' && <SaveConfirmation toastState={toastState} />}
+      <ModalGenerarCotizacion
+        isOpen={showModalGenerarCotizacion}
+        onClose={() => setShowModalGenerarCotizacion(false)}
+        licitacionInfo={mockLicitacionInfo}
+        items={itemsCotizacion}
+        onConfirmSend={handleConfirmSend}
+      />
     </>
   );
 }
