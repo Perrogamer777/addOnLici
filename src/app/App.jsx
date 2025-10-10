@@ -142,6 +142,10 @@ function App() {
           </div>
         </div>
       </main>
+      
+      {/* Modales */}
+      <StockModal producto={modalStockData} onClose={handleCloseStock} />
+      {toastState !== 'idle' && <SaveConfirmation toastState={toastState} />}
     </>
   );
 }
