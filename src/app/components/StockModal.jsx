@@ -5,7 +5,7 @@ export default function StockModal({ producto, onClose }) {
 
   return (
     <div 
-      className="fixed inset-0 bg-gray bg-opacity-20 backdrop-blur-sm flex items-center justify-center p-4"
+      className="fixed inset-0 bg-gray bg-opacity-80 backdrop-blur-sm flex items-center justify-center p-4"
       style={{ zIndex: 10000 }}
       onClick={onClose}
     >
