@@ -1,25 +1,20 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React from 'react';
 
 const TrashIcon = () => <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>;
 
-export default function ResumenCotizacion({ items, onRemove, onSave, onUpdateCantidad, onOpenModalGenerarCotizacion, isMobile }) {
+export default function ResumenCotizacion({ 
+    items, 
+    onRemove, 
+    onSave, 
+    onUpdateCantidad, 
+    onOpenModalGenerarCotizacion, 
+    isMobile,
+    productAddedToast,
+    lastAddedProduct
+}) {
     const neto = items.reduce((acc, item) => acc + (item.precioUnitario * item.cantidad), 0);
     const iva = neto * 0.19;
     const total = neto + iva;
-
-    const [showAdded, setShowAdded] = useState(false);
-    const prevItemsLength = useRef(items.length);
-
-    useEffect(() => {
-        if (items.length > prevItemsLength.current) {
-            setShowAdded(true);
-            const timer = setTimeout(() => {
-                setShowAdded(false);
-            }, 2000);
-            return () => clearTimeout(timer);
-        }
-        prevItemsLength.current = items.length;
-    }, [items]);
 
     const handleCantidadChange = (sku, nuevaCantidad) => {
         if (nuevaCantidad <= 0) {
@@ -31,7 +26,7 @@ export default function ResumenCotizacion({ items, onRemove, onSave, onUpdateCan
 
     const handleGenerarCotizacion = () => {
         if (items.length === 0) {
-            alert('Agrega al menos un producto para generar la cotización');
+            console.warn('Agrega al menos un producto para generar la cotización');
             return;
         }
         onOpenModalGenerarCotizacion();
@@ -42,9 +37,6 @@ export default function ResumenCotizacion({ items, onRemove, onSave, onUpdateCan
             <div className="flex justify-between items-center mb-3">
                 <div className="flex items-center gap-2">
                     <h3 className="text-lg font-semibold">Resumen de Cotización</h3>
-                    <span className={`text-sm font-semibold text-green-600 transition-opacity duration-300 ${showAdded ? 'opacity-100' : 'opacity-0'}`}>
-                        ✓ Agregado
-                    </span>
                 </div>
                 <button
                     type="button"
@@ -145,6 +137,27 @@ export default function ResumenCotizacion({ items, onRemove, onSave, onUpdateCan
                 >
                     Generar y Enviar Cotización
                 </button>
+                
+                {/* Toast de producto agregado - debajo del botón */}
+                {productAddedToast !== 'idle' && (
+                    <div 
+                        className={`mt-2 bg-green-600 text-white px-3 py-2 rounded-lg flex items-center gap-2 transition-all duration-300 ${
+                            productAddedToast === 'visible' ? 'transform scale-100 opacity-100' : 'transform scale-95 opacity-0'
+                        }`}
+                    >
+                        <div className="text-green-200 flex-shrink-0">
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                            <p className="font-semibold text-sm">¡Producto agregado!</p>
+                            <p className="text-xs text-green-100 truncate">
+                                {lastAddedProduct?.nombre} - Cantidad: {lastAddedProduct?.cantidad}
+                            </p>
+                        </div>
+                    </div>
+                )}
             </div>
         </aside>
     );

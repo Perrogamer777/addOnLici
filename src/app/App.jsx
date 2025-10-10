@@ -1,9 +1,8 @@
-import React, { useState, useRef, useCallback, useMemo, useEffect, use } from 'react';
+import React, { useState, useRef, useCallback, useMemo, useEffect } from 'react';
 import { mockLicitacionInfo, mockProductosSolicitados, mockCatalogoProductos } from './data/mockData';
 import { useClient } from './hooks/useClient';
 import { useCatalogFilters } from './hooks/useCatalogFilters';
 import { useIframeAutoResize } from './hooks/useIframeAutoResize';
-
 
 import HeaderInfo from './components/HeaderInfo';
 import ProductosSolicitados from './components/ProductosSolicitados';
@@ -24,7 +23,9 @@ function App() {
   const [toastState, setToastState] = useState('idle');
   const [isMobile, setIsMobile] = useState(false);
   const [showModalGenerarCotizacion, setShowModalGenerarCotizacion] = useState(false);
-
+  
+  const [productAddedToast, setProductAddedToast] = useState('idle');
+  const [lastAddedProduct, setLastAddedProduct] = useState(null);
   const {
     filteredProducts,
     selectedRubro, setSelectedRubro,
@@ -37,7 +38,6 @@ function App() {
   useIframeAutoResize(client, mainRef, [itemsCotizacion, filteredProducts, currentPage, isMobile]);
 
   const handleConfirmSend = useCallback(() => {
-
     console.log('Cotización enviada:', { 
       licitacionInfo: mockLicitacionInfo, 
       items: itemsCotizacion 
@@ -79,8 +79,35 @@ function App() {
   const handleAgregarProducto = useCallback((producto, cantidad) => {
     setItemsCotizacion(prev => {
       const existing = prev.find(i => i.sku === producto.sku);
-      if (existing) return prev.map(i => i.sku === producto.sku ? { ...i, cantidad: i.cantidad + cantidad } : i);
-      return [...prev, { ...producto, cantidad }];
+      
+      if (existing) {
+        // Producto ya existe, actualizamos cantidad
+        const newCantidad = existing.cantidad + cantidad;
+        setLastAddedProduct({
+          nombre: producto.nombre,
+          cantidad: newCantidad,
+          isUpdate: true
+        });
+        
+        setProductAddedToast('visible');
+        setTimeout(() => setProductAddedToast('exiting'), 2500);
+        setTimeout(() => setProductAddedToast('idle'), 3000);
+        
+        return prev.map(i => i.sku === producto.sku ? { ...i, cantidad: newCantidad } : i);
+      } else {
+        // Producto nuevo
+        setLastAddedProduct({
+          nombre: producto.nombre,
+          cantidad: cantidad,
+          isUpdate: false
+        });
+        
+        setProductAddedToast('visible');
+        setTimeout(() => setProductAddedToast('exiting'), 2500);
+        setTimeout(() => setProductAddedToast('idle'), 3000);
+        
+        return [...prev, { ...producto, cantidad }];
+      }
     });
   }, []);
 
@@ -95,7 +122,7 @@ function App() {
     setToastState('visible');
     setTimeout(() => setToastState('exiting'), 4500);
     setTimeout(() => setToastState('idle'), 5000);
-  }, [itemsCotizacion]);
+  }, []);
 
   const handleUpdateCantidad = useCallback((sku, nuevaCantidad) => {
     setItemsCotizacion(prev => 
@@ -154,14 +181,17 @@ function App() {
               onUpdateCantidad={handleUpdateCantidad}
               onOpenModalGenerarCotizacion={() => setShowModalGenerarCotizacion(true)}
               isMobile={isMobile}
+              productAddedToast={productAddedToast}
+              lastAddedProduct={lastAddedProduct}
             />
           </div>
         </div>
       </main>
       
-      {/* Modales */}
+      {/* Modales y Toasts */}
       <StockModal producto={modalStockData} onClose={handleCloseStock} />
       {toastState !== 'idle' && <SaveConfirmation toastState={toastState} />}
+      
       <ModalGenerarCotizacion
         isOpen={showModalGenerarCotizacion}
         onClose={() => setShowModalGenerarCotizacion(false)}
