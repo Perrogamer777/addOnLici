@@ -57,7 +57,7 @@ export default function TablaProductos({
               <th className="p-3 w-1/6">Categoría</th>
               <th className="p-3 w-1/12">Precio</th>
               <th className="p-3 w-1/12">Stock</th>
-              <th className="p-3 w-1/4">Acciones</th>
+              <th className="p-3 w-1/6">Acciones</th>
             </tr>
           </thead>
         </table>
@@ -69,7 +69,7 @@ export default function TablaProductos({
           </tbody>
         </table>
       </div>
-      {/* Paginación funcional */}
+      {/* Paginación */}
       <div className="flex justify-center items-center mt-4 text-sm">
         <button
           type="button"
