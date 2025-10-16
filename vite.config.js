@@ -14,6 +14,7 @@ const __dirname = dirname(__filename)
 
 export default ({ mode }) => {
   process.env = { ...process.env, ...loadEnv(mode, process.cwd()) }
+
   return defineConfig({
     base: './',
     plugins: [
@@ -22,39 +23,36 @@ export default ({ mode }) => {
       TranslationsLoader(),
       StaticCopy({
         targets: [
-          { src: resolve(__dirname, 'src/assets/*'), dest: './' },
-          { src: resolve(__dirname, 'src/manifest.json'), dest: '../', modifier: changeLocation },
+          // Copia todos los assets al subdirectorio correcto
+          { src: resolve(__dirname, 'src/assets/*'), dest: 'assets' },
+          // Copia manifest.json directamente a la raíz del outDir (dist/)
           {
-            src: resolve(__dirname, 'src/translations/en.json'),
-            dest: '../translations',
-            modifier: extractMarketplaceTranslation
+            src: resolve(__dirname, 'src/manifest.json'),
+            dest: resolve(__dirname, 'dist'),
+            modifier: (data) => data // sin modificar el contenido
+          },
+          // Copia traducciones si existen
+          {
+            src: resolve(__dirname, 'src/translations/*'),
+            dest: 'translations'
           }
         ]
       })
     ],
     root: 'src',
-    test: {
-      include: ['../{test,spec}/**/*.{test,spec}.{js,ts,jsx}'],
-      exclude: ['**/node_modules/**', '**/dist/**'],
-      globals: true,
-      environment: 'jsdom'
-    },
     build: {
+      outDir: resolve(__dirname, 'dist'),
+      emptyOutDir: true,
       rollupOptions: {
         input: {
           main: resolve(__dirname, 'src/index.html')
         },
         output: {
-          entryFileNames: `[name].js`,
-          chunkFileNames: `[name].js`,
-          assetFileNames: `[name].[ext]`
-        },
-        watch: {
-          include: 'src/**'
+          entryFileNames: `assets/[name].js`,
+          chunkFileNames: `assets/[name].js`,
+          assetFileNames: `assets/[name].[ext]`
         }
-      },
-      outDir: resolve(__dirname, 'dist/assets'),
-      emptyOutDir: true
+      }
     }
   })
 }
