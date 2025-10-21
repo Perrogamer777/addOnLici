@@ -2,15 +2,20 @@ import React, { useState } from 'react';
 
 export default function HeaderInfo({ info }) {
   const [showTooltip, setShowTooltip] = useState(false);
-  const comentarios = info.cliente?.comentarios;
+  // Valores por defecto si no hay datos
+  const idLicitacion = info?.idLicitacion || 'N/A';
+  const idCliente = info?.idCliente || 'N/A';
+  const nombreCliente = info?.nombreCliente || 'Sin información';
+  const fechaLimite = info?.fechaLimite || 'N/A';
+  const comentarios = info?.comentarios || 'Sin comentario';
   
   return (
     <div className="p-3 lg:p-4 bg-blue-50 border border-blue-200 rounded-lg text-xs lg:text-sm">
       {/* Grid responsivo: 1 columna en móvil, 4 en desktop */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-2 lg:gap-4">
-        <div><span className="font-semibold text-gray-600">ID Licitación:</span> <strong className="font-normal">{info.id}</strong></div>
-        <div><span className="font-semibold text-gray-600">Cliente:</span> <strong className="font-normal">{info.cliente.nombre}</strong></div>
-        <div><span className="font-semibold text-gray-600">Fecha Cierre:</span> <strong className="font-normal">{info.fechaCierre}</strong></div>
+        <div><span className="font-semibold text-gray-600">ID Licitación:</span> <strong className="font-normal">{idLicitacion}</strong></div>
+        <div><span className="font-semibold text-gray-600">Cliente:</span> <strong className="font-normal">{nombreCliente}</strong></div>
+        <div><span className="font-semibold text-gray-600">Fecha Cierre:</span> <strong className="font-normal">{fechaLimite}</strong></div>
         
         {/* Comentarios con tooltip responsivo */}
         <div className="relative">
@@ -34,7 +39,7 @@ export default function HeaderInfo({ info }) {
               )}
             </div>
           ) : (
-            <span className="text-gray-400 text-xs ml-2">Sin comentarios</span>
+            <span className="text-gray-400 text-xs ml-2">{comentarios}</span>
           )}
         </div>
       </div>

@@ -10,7 +10,8 @@
     "support": {
       "ticket_sidebar": {
         "url": "http://localhost:3000/",
-        "flexible": true
+        "flexible": true,
+        "autoLoad": true
       }
     }
   },

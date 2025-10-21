@@ -32,19 +32,19 @@ export const mockProductosSolicitados = [
     categoria: 'Sierras'
   },
     { 
-    id: 'REQ-003', 
+    id: 'REQ-004', 
     unidades: 10, 
     descripcion: 'Sierra Circular 7 1/4" 1500W',
     sku: '55432M',
     categoria: 'Sierras'
   },  { 
-    id: 'REQ-003', 
+    id: 'REQ-005', 
     unidades: 10, 
     descripcion: 'Sierra Circular 7 1/4" 1500W',
     sku: '55432M',
     categoria: 'Sierras'
   },  { 
-    id: 'REQ-003', 
+    id: 'REQ-006', 
     unidades: 10, 
     descripcion: 'Sierra Circular 7 1/4" 1500W',
     sku: '55432M',

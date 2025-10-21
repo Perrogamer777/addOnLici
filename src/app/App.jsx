@@ -1,8 +1,11 @@
 import React, { useState, useRef, useCallback, useMemo, useEffect } from 'react';
 import { mockLicitacionInfo, mockProductosSolicitados, mockCatalogoProductos } from './data/mockData';
 import { useClient } from './hooks/useClient';
+import { useTicketIdFromZendesk as useTicketIdFromZendesk } from './hooks/useTicketIdFromZendesk';
+import { useLicitacionData } from './hooks/useLicitacionData';
 import { useCatalogFilters } from './hooks/useCatalogFilters';
 import { useIframeAutoResize } from './hooks/useIframeAutoResize';
+import { useProductosSoli } from './hooks/useProductosSoliData';
 
 import HeaderInfo from './components/HeaderInfo';
 import ProductosSolicitados from './components/ProductosSolicitados';
@@ -16,6 +19,17 @@ const itemsPorPagina = 10;
 
 function App() {
   const client = useClient();
+  
+  // Obtener ID de licitación desde Zendesk
+  const { idLicitacion, loading: loadingTicket, error: errorTicket } = useTicketIdFromZendesk();
+  
+  // Obtener datos de licitación desde la API
+  const { data: licitacionData, loading: loadingLicitacion, error: errorLicitacion } = useLicitacionData(idLicitacion);
+  
+  //datos de productos solicitados
+  const { productos: productosSolicitados, loading: loadingProductos, error: errorProductos } = useProductosSoli(idLicitacion);
+
+
   const [itemsCotizacion, setItemsCotizacion] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
@@ -26,6 +40,7 @@ function App() {
   
   const [productAddedToast, setProductAddedToast] = useState('idle');
   const [lastAddedProduct, setLastAddedProduct] = useState(null);
+  
   const {
     filteredProducts,
     selectedRubro, setSelectedRubro,
@@ -39,7 +54,7 @@ function App() {
 
   const handleConfirmSend = useCallback(() => {
     console.log('Cotización enviada:', { 
-      licitacionInfo: mockLicitacionInfo, 
+      licitacionInfo: licitacionData, 
       items: itemsCotizacion 
     });
     
@@ -48,7 +63,7 @@ function App() {
     setTimeout(() => setToastState('exiting'), 4500);
     setTimeout(() => setToastState('idle'), 5000);
     setItemsCotizacion([]);
-  }, [itemsCotizacion]);
+  }, [itemsCotizacion, licitacionData]);
 
   // Detectar tamaño de pantalla
   useEffect(() => {
@@ -81,7 +96,6 @@ function App() {
       const existing = prev.find(i => i.sku === producto.sku);
       
       if (existing) {
-        // Producto ya existe, actualizamos cantidad
         const newCantidad = existing.cantidad + cantidad;
         setLastAddedProduct({
           nombre: producto.nombre,
@@ -95,7 +109,6 @@ function App() {
         
         return prev.map(i => i.sku === producto.sku ? { ...i, cantidad: newCantidad } : i);
       } else {
-        // Producto nuevo
         setLastAddedProduct({
           nombre: producto.nombre,
           cantidad: cantidad,
@@ -138,16 +151,32 @@ function App() {
     setCurrentPage(1);
   }, [searchTerm, selectedRubro, selectedLinea, selectedFamilia]);
 
+  // Mostrar loading si está cargando
+  if (loadingTicket || loadingLicitacion) {
+    return (
+      <div className="flex items-center justify-center h-screen bg-gray-100">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Cargando información de la licitación...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <>
-      <main ref={mainRef} className="bg-gray-100 p-3 lg:p-6 font-sans min-h-screen flex flex-col gap-3 lg:gap-6">
-        {/* Header responsivo */}
-        <HeaderInfo info={mockLicitacionInfo} />
+      <main ref={mainRef} 
+      className="bg-gray-100 p-3 lg:p-6 font-sans min-h-screen flex flex-col gap-3 lg:gap-6"
+      style={{ minHeight: '750px' }}>
+        {/* Header con datos de la API */}
+        <HeaderInfo info={licitacionData} />
         
         <div className={`flex gap-3 lg:gap-6 flex-1 min-h-0 ${isMobile ? 'flex-col' : ''}`}>
           {/* Columna izquierda */}
           <div className={`flex flex-col gap-3 lg:gap-6 min-h-0 ${isMobile ? 'w-full' : 'w-2/3'}`}>
-            <ProductosSolicitados items={mockProductosSolicitados} onSugerenciaClick={handleSugerenciaClick} />
+            <ProductosSolicitados 
+            items={productosSolicitados} 
+            onSugerenciaClick={handleSugerenciaClick} />
             
             <div className="flex-grow min-h-0">
               <TablaProductos
@@ -172,7 +201,7 @@ function App() {
             </div>
           </div>
           
-          {/* Columna derecha - se mueve arriba si hay items */}
+          {/* Columna derecha */}
           <div className={`min-h-0 ${isMobile ? 'w-full order-first' : 'w-1/3'} ${isMobile && itemsCotizacion.length === 0 ? 'hidden' : ''}`}>
             <ResumenCotizacion 
               items={itemsCotizacion} 
@@ -195,7 +224,7 @@ function App() {
       <ModalGenerarCotizacion
         isOpen={showModalGenerarCotizacion}
         onClose={() => setShowModalGenerarCotizacion(false)}
-        licitacionInfo={mockLicitacionInfo}
+        licitacionInfo={licitacionData}
         items={itemsCotizacion}
         onConfirmSend={handleConfirmSend}
       />

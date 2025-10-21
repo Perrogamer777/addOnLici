@@ -28,7 +28,7 @@ export default function ProductosSolicitados({ items, onSugerenciaClick }) {
                 <td className="p-3 text-gray-500">{item.sku}</td>
                 <td className="p-3 font-medium text-gray-800">{item.descripcion}</td>
                 <td className="p-3 text-gray-500">{item.categoria}</td>
-                <td className="p-3 font-bold text-center">{item.unidades}</td>
+                <td className="p-3 font-bold text-center">{item.cantidad}</td>
                 <td className="p-3 text-center">
                   <button 
                     type="button" 
