@@ -1,3 +1,5 @@
+import React from 'react';
+
 export default function ProductosSolicitados({ items, onSugerenciaClick }) {
   const isScrollable = items.length > 3;
   
@@ -15,31 +17,39 @@ export default function ProductosSolicitados({ items, onSugerenciaClick }) {
         <table className="w-full text-sm text-left">
           <thead className="bg-gray-50 text-xs text-gray-600 uppercase sticky top-0">
             <tr>
-              <th className="p-3">SKU Ref.</th>
-              <th className="p-3">Descripción Solicitada</th>
+              <th className="p-3">SKU Wherex</th>
+              <th className="p-3">Descripción</th>
               <th className="p-3">Categoría</th>
-              <th className="p-3">Uni. Solicitadas</th>
+              <th className="p-3">Unidades</th>
               <th className="p-3">Acciones</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200">
-            {items.map(item => (
-              <tr key={item.id} className="hover:bg-gray-50">
-                <td className="p-3 text-gray-500">{item.sku}</td>
-                <td className="p-3 font-medium text-gray-800">{item.descripcion}</td>
-                <td className="p-3 text-gray-500">{item.categoria}</td>
-                <td className="p-3 font-bold text-center">{item.cantidad}</td>
-                <td className="p-3 text-center">
-                  <button 
-                    type="button" 
-                    className="px-3 py-1 bg-blue-100 text-blue-700 text-xs font-semibold rounded-full hover:bg-blue-200" 
-                    onClick={() => onSugerenciaClick(item.descripcion)}
-                  >
-                    Ir a sugerencia
-                  </button>
+            {items.length === 0 ? (
+              <tr>
+                <td colSpan="5" className="p-4 text-center text-gray-500 text-sm">
+                  No hay productos solicitados para esta licitación
                 </td>
               </tr>
-            ))}
+            ) : (
+              items.map((item, index) => (
+                <tr key={`${item.sku}-${index}`} className="hover:bg-gray-50">
+                  <td className="p-3 text-gray-500">{item.sku}</td>
+                  <td className="p-3 font-medium text-gray-800">{item.descripcion}</td>
+                  <td className="p-3 text-gray-500">{item.categoria}</td>
+                  <td className="p-3 font-bold text-center">{item.cantidad}</td>
+                  <td className="p-3 text-center">
+                    <button 
+                      type="button" 
+                      className="px-3 py-1 bg-blue-100 text-blue-700 text-xs font-semibold rounded-full hover:bg-blue-200" 
+                      onClick={() => onSugerenciaClick(item.descripcion)}
+                    >
+                      Ir a sugerencia
+                    </button>
+                  </td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
         

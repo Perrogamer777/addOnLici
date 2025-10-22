@@ -5,9 +5,11 @@ const API_BASE_URL = 'http://localhost:8080';
 export const useLicitacionData = (idLicitacion) => {
   const [data, setData] = useState({
     idLicitacion: null,
-    idCliente: null,
-    nombreCliente: 'Sin información',
-    comentarios: 'Sin comentario'
+    fechaLicitacion: null,
+    empresaCompradora: 'Sin información',
+    fechaCierreOferta: null,
+    comentariosGenerales: null,
+    linkMasDetalles: null
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -16,17 +18,19 @@ export const useLicitacionData = (idLicitacion) => {
     if (!idLicitacion) {
       setData({
         idLicitacion: null,
-        idCliente: null,
-        nombreCliente: 'Sin ID de licitación'
+        fechaLicitacion: null,
+        empresaCompradora: 'Sin ID de licitación',
+        fechaCierreOferta: null,
+        comentariosGenerales: null,
+        linkMasDetalles: null
       });
       return;
     }
 
-    //obtener datos cliente 
     const fetchData = async () => {
       try {
         setLoading(true);
-        console.log('Consultando API para licitación ID:', idLicitacion);
+        console.log('licitación ID:', idLicitacion);
 
         const response = await fetch(
           `${API_BASE_URL}/datos-internos/licitacion/${idLicitacion}`
@@ -40,35 +44,43 @@ export const useLicitacionData = (idLicitacion) => {
         }
 
         const json = await response.json();
-        console.log('Datos recibidos de la API:', json);
+        console.log('✅ Datos recibidos de la API:', json);
 
-        // La respuesta de la API tiene esta estructura:
-        // { idLicitacion: Long, idCliente: Long, nombreCliente: String }
+        // La respuesta de la API ahora tiene esta estructura:
+        // {
+        //   idLicitacion: String,
+        //   fechaLicitacion: String,
+        //   empresaCompradora: String,
+        //   fechaCierreOferta: String,
+        //   comentariosGenerales: String,
+        //   linkMasDetalles: String
+        // }
         setData({
           idLicitacion: json.idLicitacion,
-          idCliente: json.idCliente,
-          nombreCliente: json.nombreCliente || 'Sin información del cliente',
-          fechaLimite: json.fechaLimite,
-          comentarios: json.comentarios||'Sin comentario'
+          fechaLicitacion: json.fechaLicitacion,
+          empresaCompradora: json.empresaCompradora || 'Sin información del cliente',
+          fechaCierreOferta: json.fechaCierreOferta,
+          comentariosGenerales: json.comentariosGenerales || null,
+          linkMasDetalles: json.linkMasDetalles || null
         });
         setError(null);
       } catch (err) {
-        console.error('Error al cargar licitación:', err);
+        console.error('❌ Error al cargar licitación:', err);
         setError(err.message);
 
         // Datos de fallback cuando hay error
         setData({
           idLicitacion: idLicitacion,
-          idCliente: null,
-          nombreCliente: 'Error al cargar datos'
+          fechaLicitacion: null,
+          empresaCompradora: 'Error al cargar datos',
+          fechaCierreOferta: null,
+          comentariosGenerales: 'No se pudo cargar la información',
+          linkMasDetalles: null
         });
       } finally {
         setLoading(false);
       }
-      //para obtener rubros
-      const response = await fetch (`${API_BASE_URL}/datos-internos/licitacion/rubros`);
     };
-
 
     fetchData();
   }, [idLicitacion]);

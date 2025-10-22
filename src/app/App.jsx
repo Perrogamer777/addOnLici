@@ -174,8 +174,7 @@ function App() {
         <div className={`flex gap-3 lg:gap-6 flex-1 min-h-0 ${isMobile ? 'flex-col' : ''}`}>
           {/* Columna izquierda */}
           <div className={`flex flex-col gap-3 lg:gap-6 min-h-0 ${isMobile ? 'w-full' : 'w-2/3'}`}>
-            <ProductosSolicitados 
-            items={productosSolicitados} 
+            <ProductosSolicitados items={productosSolicitados} 
             onSugerenciaClick={handleSugerenciaClick} />
             
             <div className="flex-grow min-h-0">

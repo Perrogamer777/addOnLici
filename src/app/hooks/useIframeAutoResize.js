@@ -11,7 +11,7 @@ export function useIframeAutoResize(client, mainRef, dependencies = []) {
           mainRef.current.offsetHeight,
           document.documentElement.scrollHeight,
           document.body.scrollHeight,
-          800 // Altura mínima
+          1000 // Altura mínima
         );
 
       

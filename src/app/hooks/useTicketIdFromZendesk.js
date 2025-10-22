@@ -23,16 +23,16 @@ export const useTicketIdFromZendesk = () => {
         
         console.log('Título del ticket:', ticketSubject);
         
-        // Extraer el ID de licitación del título
-        // Buscar un número en el título
-        const match = ticketSubject.match(/\d+/);
+        // Extraer el ID de licitación con formato LIC-XXXX
+        const match = ticketSubject.match(/LIC-\d+/i);
         
         if (!match) {
-          throw new Error('No se encontró ID de licitación en el título del ticket');
+          throw new Error('No se encontró ID de licitación con formato LIC-XXX en el título del ticket');
         }
         
-        const licitacionId = parseInt(match[0]);
-        console.log('ID de licitación extraído del título:', licitacionId);
+        // Extraer el ID completo (ej: "LIC-96")
+        const licitacionId = match[0].toUpperCase(); 
+        console.log('ID de licitación extraído:', licitacionId);
         
         setIdLicitacion(licitacionId);
         setError(null);
