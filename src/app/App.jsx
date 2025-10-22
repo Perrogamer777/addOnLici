@@ -50,7 +50,15 @@ function App() {
   } = useCatalogFilters(mockCatalogoProductos, searchTerm);
 
   const mainRef = useRef(null);
-  useIframeAutoResize(client, mainRef, [itemsCotizacion, filteredProducts, currentPage, isMobile]);
+  useIframeAutoResize(client, mainRef, [
+  itemsCotizacion,
+  filteredProducts,
+  currentPage,
+  isMobile,
+  loadingLicitacion,
+  loadingProductos,
+  productosSolicitados
+]);
 
   const handleConfirmSend = useCallback(() => {
     console.log('Cotización enviada:', { 
