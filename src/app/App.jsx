@@ -1,11 +1,11 @@
 import React, { useState, useRef, useCallback, useMemo, useEffect } from 'react';
-import { mockLicitacionInfo, mockProductosSolicitados, mockCatalogoProductos } from './data/mockData';
+import { mockLicitacionInfo, mockProductosSolicitados } from './data/mockData';
 import { useClient } from './hooks/useClient';
-import { useTicketIdFromZendesk as useTicketIdFromZendesk } from './hooks/useTicketIdFromZendesk';
+import { useTicketIdFromZendesk } from './hooks/useTicketIdFromZendesk';
 import { useLicitacionData } from './hooks/useLicitacionData';
-import { useCatalogFilters } from './hooks/useCatalogFilters';
 import { useIframeAutoResize } from './hooks/useIframeAutoResize';
 import { useProductosSoli } from './hooks/useProductosSoliData';
+import { useCatalogoProductos } from './hooks/useCatalogoProductos'; 
 
 import HeaderInfo from './components/HeaderInfo';
 import ProductosSolicitados from './components/ProductosSolicitados';
@@ -20,45 +20,48 @@ const itemsPorPagina = 10;
 function App() {
   const client = useClient();
   
-  // Obtener ID de licitación desde Zendesk
+  // Estados de Licitación y Productos Solicitados
   const { idLicitacion, loading: loadingTicket, error: errorTicket } = useTicketIdFromZendesk();
-  
-  // Obtener datos de licitación desde la API
   const { data: licitacionData, loading: loadingLicitacion, error: errorLicitacion } = useLicitacionData(idLicitacion);
-  
-  //datos de productos solicitados
   const { productos: productosSolicitados, loading: loadingProductos, error: errorProductos } = useProductosSoli(idLicitacion);
+
+  const [currentPage, setCurrentPage] = useState(1);
+  const [searchTerm, setSearchTerm] = useState('');
+  
+  const [selectedRubro, setSelectedRubro] = useState('');
+  const [selectedLinea, setSelectedLinea] = useState('');
+  const [selectedFamilia, setSelectedFamilia] = useState('');
+
+
+  const { 
+    productos: catalogoProductos, 
+    loading: loadingCatalogo, 
+    error: errorCatalogo, 
+    totalPages: apiTotalPages 
+  } = useCatalogoProductos(currentPage, itemsPorPagina);
 
 
   const [itemsCotizacion, setItemsCotizacion] = useState([]);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [currentPage, setCurrentPage] = useState(1);
   const [modalStockData, setModalStockData] = useState(null);
   const [toastState, setToastState] = useState('idle');
   const [isMobile, setIsMobile] = useState(false);
   const [showModalGenerarCotizacion, setShowModalGenerarCotizacion] = useState(false);
-  
   const [productAddedToast, setProductAddedToast] = useState('idle');
   const [lastAddedProduct, setLastAddedProduct] = useState(null);
   
-  const {
-    filteredProducts,
-    selectedRubro, setSelectedRubro,
-    selectedLinea, setSelectedLinea,
-    selectedFamilia, setSelectedFamilia,
-    availableLineas, availableFamilias,
-  } = useCatalogFilters(mockCatalogoProductos, searchTerm);
+
 
   const mainRef = useRef(null);
   useIframeAutoResize(client, mainRef, [
-  itemsCotizacion,
-  filteredProducts,
-  currentPage,
-  isMobile,
-  loadingLicitacion,
-  loadingProductos,
-  productosSolicitados
-]);
+    itemsCotizacion,
+    catalogoProductos, 
+    currentPage,
+    isMobile,
+    loadingLicitacion,
+    loadingProductos,
+    productosSolicitados
+  ]);
+
 
   const handleConfirmSend = useCallback(() => {
     console.log('Cotización enviada:', { 
@@ -73,7 +76,6 @@ function App() {
     setItemsCotizacion([]);
   }, [itemsCotizacion, licitacionData]);
 
-  // Detectar tamaño de pantalla
   useEffect(() => {
     const checkScreenSize = () => {
       setIsMobile(window.innerWidth < 1024); 
@@ -84,14 +86,12 @@ function App() {
     return () => window.removeEventListener('resize', checkScreenSize);
   }, []);
 
-  const totalPages = Math.ceil(filteredProducts.length / itemsPorPagina);
-  const paginatedProducts = useMemo(() => {
-    const startIndex = (currentPage - 1) * itemsPorPagina;
-    return filteredProducts.slice(startIndex, startIndex + itemsPorPagina);
-  }, [filteredProducts, currentPage]);
 
+  const totalPages = apiTotalPages || 1; 
   const handlePageChange = (newPage) => {
-    if (newPage > 0 && newPage <= totalPages) setCurrentPage(newPage);
+    if (newPage > 0 && newPage <= totalPages) {
+      setCurrentPage(newPage);
+    }
   };
 
   const handleSugerenciaClick = useCallback((descripcion) => {
@@ -101,6 +101,7 @@ function App() {
 
   const handleAgregarProducto = useCallback((producto, cantidad) => {
     setItemsCotizacion(prev => {
+
       const existing = prev.find(i => i.sku === producto.sku);
       
       if (existing) {
@@ -155,11 +156,13 @@ function App() {
     );
   }, []);
 
+
+  // Efecto para resetear la página a 1 si cambian los filtros
   useEffect(() => {
     setCurrentPage(1);
   }, [searchTerm, selectedRubro, selectedLinea, selectedFamilia]);
 
-  // Mostrar loading si está cargando
+  // Mostrar loading de la licitación
   if (loadingTicket || loadingLicitacion) {
     return (
       <div className="flex items-center justify-center h-screen bg-gray-100">
@@ -176,7 +179,7 @@ function App() {
       <main ref={mainRef} 
       className="bg-gray-100 p-3 lg:p-6 font-sans min-h-screen flex flex-col gap-3 lg:gap-6"
       style={{ minHeight: '750px' }}>
-        {/* Header con datos de la API */}
+        
         <HeaderInfo info={licitacionData} />
         
         <div className={`flex gap-3 lg:gap-6 flex-1 min-h-0 ${isMobile ? 'flex-col' : ''}`}>
@@ -187,22 +190,24 @@ function App() {
             
             <div className="flex-grow min-h-0">
               <TablaProductos
-                productos={paginatedProducts}
+                productos={catalogoProductos} 
+                loading={loadingCatalogo} 
                 onAgregar={handleAgregarProducto}
                 onStockClick={handleShowStock}
+                
+                // Pasamos estados y setters para filtros
                 searchTerm={searchTerm}
                 setSearchTerm={setSearchTerm}
                 selectedRubro={selectedRubro}
-                setSelectedRubro={(val) => { setSelectedRubro(val); setSelectedLinea(''); setSelectedFamilia(''); }}
+                setSelectedRubro={setSelectedRubro}
                 selectedLinea={selectedLinea}
-                setSelectedLinea={(val) => { setSelectedLinea(val); setSelectedFamilia(''); }}
+                setSelectedLinea={setSelectedLinea}
                 selectedFamilia={selectedFamilia}
                 setSelectedFamilia={setSelectedFamilia}
-                availableLineas={availableLineas}
-                availableFamilias={availableFamilias}
                 currentPage={currentPage}
                 totalPages={totalPages}
                 onPageChange={handlePageChange}
+                
                 isMobile={isMobile}
               />
             </div>
@@ -240,4 +245,3 @@ function App() {
 }
 
 export default App;
-

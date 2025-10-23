@@ -44,17 +44,8 @@ export const useLicitacionData = (idLicitacion) => {
         }
 
         const json = await response.json();
-        console.log('✅ Datos recibidos de la API:', json);
+        console.log('Datos recibidos de la API:', json);
 
-        // La respuesta de la API ahora tiene esta estructura:
-        // {
-        //   idLicitacion: String,
-        //   fechaLicitacion: String,
-        //   empresaCompradora: String,
-        //   fechaCierreOferta: String,
-        //   comentariosGenerales: String,
-        //   linkMasDetalles: String
-        // }
         setData({
           idLicitacion: json.idLicitacion,
           fechaLicitacion: json.fechaLicitacion,
@@ -65,7 +56,7 @@ export const useLicitacionData = (idLicitacion) => {
         });
         setError(null);
       } catch (err) {
-        console.error('❌ Error al cargar licitación:', err);
+        console.error('Error al cargar licitación:', err);
         setError(err.message);
 
         // Datos de fallback cuando hay error
