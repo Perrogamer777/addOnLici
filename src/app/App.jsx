@@ -33,12 +33,19 @@ function App() {
   const [selectedFamilia, setSelectedFamilia] = useState('');
 
 
-  const { 
+const { 
     productos: catalogoProductos, 
     loading: loadingCatalogo, 
     error: errorCatalogo, 
     totalPages: apiTotalPages 
-  } = useCatalogoProductos(currentPage, itemsPorPagina);
+  } = useCatalogoProductos(
+    currentPage,
+    itemsPorPagina,
+    searchTerm,
+    selectedRubro,
+    selectedLinea,
+    selectedFamilia
+  );
 
 
   const [itemsCotizacion, setItemsCotizacion] = useState([]);
@@ -195,7 +202,6 @@ function App() {
                 onAgregar={handleAgregarProducto}
                 onStockClick={handleShowStock}
                 
-                // Pasamos estados y setters para filtros
                 searchTerm={searchTerm}
                 setSearchTerm={setSearchTerm}
                 selectedRubro={selectedRubro}
@@ -205,7 +211,7 @@ function App() {
                 selectedFamilia={selectedFamilia}
                 setSelectedFamilia={setSelectedFamilia}
                 currentPage={currentPage}
-                totalPages={totalPages}
+                totalPages={apiTotalPages}
                 onPageChange={handlePageChange}
                 
                 isMobile={isMobile}
