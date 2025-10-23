@@ -1,6 +1,11 @@
 import React from 'react';
+import  { useStockSucursalData } from '../hooks/useStockSucursalData';
 
 export default function StockModal({ producto, onClose }) {
+
+
+  const { stockSucursales, loading, error } = useStockSucursalData(producto?.id);
+  
   if (!producto) return null;
 
   return (
@@ -14,7 +19,7 @@ export default function StockModal({ producto, onClose }) {
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex justify-between items-center mb-4">
+        <div className="flex justify-between items-center mb-4"> 
           <h3 className="text-lg font-semibold text-gray-900">Stock por Sucursal</h3>
           <button
             onClick={onClose}
@@ -28,9 +33,10 @@ export default function StockModal({ producto, onClose }) {
 
         {/* Información del producto */}
         <div className="mb-4">
-          <h4 className="font-medium text-gray-900">{producto.nombre}</h4>
-          <p className="text-sm text-gray-600">SKU: {producto.sku}</p>
+          <h4 className="font-medium text-gray-900">{producto.nombreCobol}</h4>
+          <p className="text-sm text-gray-600">ID: {producto.id}</p>
         </div>
+
 
         {/* Tabla de stock */}
         <div className="overflow-hidden rounded-lg border border-gray-200">
@@ -42,35 +48,59 @@ export default function StockModal({ producto, onClose }) {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
-              {producto.stockPorSucursal && Array.isArray(producto.stockPorSucursal) ? (
-                producto.stockPorSucursal.map((item, index) => (
-                  <tr key={index} className="hover:bg-gray-50">
-                    <td className="px-4 py-2 text-gray-900">{item.sucursal}</td>
+    
+              {loading && (
+                <tr>
+                  <td colSpan="2" className="px-4 py-3 text-center text-gray-500">
+                    Cargando stock...
+                  </td>
+                </tr>
+              )}
+
+              {error && (
+                <tr>
+                  <td colSpan="2" className="px-4 py-3 text-center text-red-500">
+                    Error al cargar el stock.
+                  </td>
+                </tr>
+              )}
+
+
+              {!loading && !error && stockSucursales.length > 0 && (
+                stockSucursales.map((sucursal) => (
+                  <tr key={sucursal.nombreSucursal} className="hover:bg-gray-50">
+                    {/* Usamos 'nombreSucursal' de tu JSON */}
+                    <td className="px-4 py-2 text-gray-900">{sucursal.nombreSucursal}</td>
                     <td className="px-4 py-2 text-right">
-                      <span className={`font-medium ${item.stock > 0 ? 'text-green-600' : 'text-red-600'}`}>
-                        {item.stock}
+                      <span className={`font-medium ${sucursal.stock > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                        {sucursal.stock}
                       </span>
                     </td>
                   </tr>
                 ))
-              ) : (
+              )}
+              
+              {/* 4. Estado de Éxito */}
+              {!loading && !error && stockSucursales.length === 0 && (
                 <tr>
                   <td colSpan="2" className="px-4 py-3 text-center text-gray-500">
                     No hay información de stock disponible
                   </td>
                 </tr>
               )}
+
             </tbody>
           </table>
         </div>
 
         {/* Total */}
-        {producto.stockPorSucursal && Array.isArray(producto.stockPorSucursal) && (
+        {!loading && !error && stockSucursales.length > 0 && (
           <div className="mt-4 pt-4 border-t border-gray-200">
             <div className="flex justify-between items-center">
               <span className="font-medium text-gray-900">Total Stock:</span>
               <span className="font-bold text-lg text-blue-600">
-                {producto.stockPorSucursal.reduce((total, item) => total + item.stock, 0)}
+                {/* Calculamos el total desde 'stockSucursales' */}
+                {stockSucursales.reduce((total, sucursal) => total + sucursal.stock, 0)}
               </span>
             </div>
           </div>

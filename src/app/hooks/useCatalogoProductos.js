@@ -7,7 +7,7 @@ export const useCatalogoProductos = (pagina, tamanoPagina) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   
-  // Este estado guardará el total de páginas 
+
   const [totalPages, setTotalPages] = useState(0);
 
   useEffect(() => {
@@ -30,9 +30,7 @@ export const useCatalogoProductos = (pagina, tamanoPagina) => {
           throw new Error(`Error HTTP ${response.status}: ${response.statusText}`);
         }
 
-        // El backend devuelve directamente el array de productos
-        const data = await response.json(); 
-        
+        const data = await response.json();         
         console.log(`Catálogo recibido (Página ${pagina}):`, data);
 
         setProductos(data || []);
@@ -48,7 +46,7 @@ export const useCatalogoProductos = (pagina, tamanoPagina) => {
 
           setTotalPages(pagina + 1); 
         } else {
-          // Caso inicial o de error
+
           setTotalPages(0);
         }
         
@@ -63,8 +61,7 @@ export const useCatalogoProductos = (pagina, tamanoPagina) => {
     };
 
     fetchCatalogo();
-    
-    // Este efecto se ejecutará cada vez que 'pagina' o 'tamanoPagina' cambien
+
   }, [pagina, tamanoPagina]);
   
   return { productos, loading, error, totalPages };
