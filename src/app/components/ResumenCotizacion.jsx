@@ -63,9 +63,8 @@ export default function ResumenCotizacion({
                                     {item.nombre}
                                 </h4>
                                 <p className="text-xs text-gray-500 mt-1">
-                                    SKU: {item.id} • Uni solicitadas: {item.cantidad}
+                                    SKU: {item.id } • Uni solicitadas: {item.cantidad}
                                 </p>
-                                <p classname="text-xs text-gray-500">Sucursal: {}</p>
                             </div>
                             <button 
                                 type="button" 
@@ -139,7 +138,7 @@ export default function ResumenCotizacion({
                     Generar y Enviar Cotización
                 </button>
                 
-                {/* Toast de producto agregado - debajo del botón */}
+                {/* Toast de producto agregado */}
                 {productAddedToast !== 'idle' && (
                     <div 
                         className={`mt-2 bg-green-600 text-white px-3 py-2 rounded-lg flex items-center gap-2 transition-all duration-300 ${
