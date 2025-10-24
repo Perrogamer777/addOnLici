@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 
 const API_BASE_URL = 'http://localhost:8080/datos-internos';
 
-// 1. El hook ahora acepta todos los filtros como argumentos
+
 export const useCatalogoProductos = (
   pagina, 
   tamanoPagina, 
@@ -25,10 +25,10 @@ export const useCatalogoProductos = (
         // 2. Construimos los parámetros
         const params = new URLSearchParams({
           pagina: pagina,
-          tamanoPagina: tamanoPagina, // (el que funcionaba en Bruno, sin ñ)
+          tamanoPagina: tamanoPagina, 
         });
 
-        // 3. Añadimos los filtros a la URL SOLO SI tienen un valor
+
         if (searchTerm) {
           params.set('searchTerm', searchTerm);
         }
@@ -42,8 +42,7 @@ export const useCatalogoProductos = (
           params.set('familiaId', familiaId);
         }
 
-        // La URL ahora incluirá los filtros:
-        // .../catalogo/productos?pagina=1&tamanoPagina=10&rubroId=10-0-0
+  
         const response = await fetch(
           `${API_BASE_URL}/catalogo/productos?${params.toString()}`
         );
@@ -58,15 +57,12 @@ export const useCatalogoProductos = (
 
         setProductos(data || []);
         
-        // ... (Tu lógica para calcular totalPages se mantiene igual)
         if (data.length === 0 && pagina > 1) {
           setTotalPages(pagina - 1);
         } else if (data.length < tamanoPagina) {
           setTotalPages(pagina);
         } else {
-          // Si no sabemos el total (ej. data.length === tamanoPagina), 
-          // es mejor no adivinar y esperar la 'countQuery'.
-          // Por ahora, asumimos que hay más.
+
           setTotalPages(pagina + 1);
         }
         
@@ -82,7 +78,7 @@ export const useCatalogoProductos = (
 
     fetchCatalogo();
     
-  // 4. El efecto se ejecuta si CUALQUIER filtro cambia
+
   }, [pagina, tamanoPagina, searchTerm, rubroId, lineaId, familiaId]); 
   
   return { productos, loading, error, totalPages };

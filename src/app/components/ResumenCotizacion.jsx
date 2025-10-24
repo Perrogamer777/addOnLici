@@ -16,11 +16,11 @@ export default function ResumenCotizacion({
     const iva = neto * 0.19;
     const total = neto + iva;
 
-    const handleCantidadChange = (sku, nuevaCantidad) => {
+    const handleCantidadChange = (itemId, nuevaCantidad) => {
         if (nuevaCantidad <= 0) {
-            onRemove(sku);
+            onRemove(itemId);
         } else {
-            onUpdateCantidad(sku, nuevaCantidad);
+            onUpdateCantidad(itemId, nuevaCantidad);
         }
     };
 
@@ -55,7 +55,7 @@ export default function ResumenCotizacion({
                 )}
                 
                 {items.map(item => (
-                    <div key={item.sku} className="bg-gray-50 p-3 rounded-lg border">
+                    <div key={item.itemId} className="bg-gray-50 p-3 rounded-lg border">
                         {/* Header del producto */}
                         <div className="flex justify-between items-start mb-2">
                             <div className="flex-1">
@@ -63,12 +63,13 @@ export default function ResumenCotizacion({
                                     {item.nombre}
                                 </h4>
                                 <p className="text-xs text-gray-500 mt-1">
-                                    SKU: {item.sku} • Uni solicitadas: {item.cantidad}
+                                    SKU: {item.id} • Uni solicitadas: {item.cantidad}
                                 </p>
+                                <p classname="text-xs text-gray-500">Sucursal: {}</p>
                             </div>
                             <button 
                                 type="button" 
-                                onClick={() => onRemove(item.sku)} 
+                                onClick={() => onRemove(item.id)} 
                                 className="text-red-500 hover:text-red-700 p-1 ml-2"
                             >
                                 <TrashIcon />
@@ -80,7 +81,7 @@ export default function ResumenCotizacion({
                             <div className="flex items-center gap-2">
                                 <button
                                     type="button"
-                                    onClick={() => handleCantidadChange(item.sku, item.cantidad - 1)}
+                                    onClick={() => handleCantidadChange(item.id, item.cantidad - 1)}
                                     className="w-8 h-8 rounded-full border border-gray-300 flex items-center justify-center hover:bg-gray-100 text-lg font-bold"
                                 >
                                     −
@@ -90,13 +91,13 @@ export default function ResumenCotizacion({
                                     type="number"
                                     min="1"
                                     value={item.cantidad}
-                                    onChange={(e) => handleCantidadChange(item.sku, parseInt(e.target.value) || 1)}
+                                    onChange={(e) => handleCantidadChange(item.id, parseInt(e.target.value) || 1)}
                                     className="w-12 text-center border border-gray-300 rounded px-2 py-1 text-sm"
                                 />
                                 
                                 <button
                                     type="button"
-                                    onClick={() => handleCantidadChange(item.sku, item.cantidad + 1)}
+                                    onClick={() => handleCantidadChange(item.id, item.cantidad + 1)}
                                     className="w-8 h-8 rounded-full border border-gray-300 flex items-center justify-center hover:bg-gray-100 text-lg font-bold"
                                 >
                                     +
