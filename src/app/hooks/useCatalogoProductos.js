@@ -6,7 +6,7 @@ const API_BASE_URL = 'http://localhost:8080/datos-internos';
 export const useCatalogoProductos = (
   pagina, 
   tamanoPagina, 
-  searchTerm, 
+  submittedSearchTerm, 
   rubroId, 
   lineaId, 
   familiaId, 
@@ -37,8 +37,8 @@ export const useCatalogoProductos = (
         });
 
 
-        if (searchTerm) {
-          params.set('searchTerm', searchTerm);
+        if (submittedSearchTerm) {
+          params.set('searchTerm', submittedSearchTerm);
         }
         if (rubroId) {
           params.set('rubroId', rubroId);
@@ -82,7 +82,7 @@ export const useCatalogoProductos = (
     fetchCatalogo();
     
 
-  }, [pagina, tamanoPagina, searchTerm, rubroId, lineaId, familiaId, conStock]); 
+  }, [pagina, tamanoPagina, submittedSearchTerm, rubroId, lineaId, familiaId, conStock]); 
   
   return { productos, loading, error, totalPages };
 };

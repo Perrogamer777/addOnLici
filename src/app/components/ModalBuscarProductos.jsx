@@ -17,6 +17,7 @@ export default function ModalBusquedaProductos({
   // estados del modal 
   const [currentPage, setCurrentPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState(initialSearchTerm || '');
+  const [submittedSearchTerm, setSubmittedSearchTerm] = useState(initialSearchTerm || '');
   const [selectedRubro, setSelectedRubro] = useState('');
   const [selectedLinea, setSelectedLinea] = useState('');
   const [selectedFamilia, setSelectedFamilia] = useState('');
@@ -35,7 +36,7 @@ export default function ModalBusquedaProductos({
   } = useCatalogoProductos(
     currentPage,
     itemsPorPagina,
-    searchTerm,
+    submittedSearchTerm,
     selectedRubro,
     selectedLinea,
     selectedFamilia,
@@ -49,6 +50,8 @@ export default function ModalBusquedaProductos({
     setSelectedLinea('');
     setSelectedFamilia('');
     setCurrentPage(1);
+    setSearchTerm('');
+    setSubmittedSearchTerm('');
     if (idRubro) await obtenerLineas(idRubro);
   };
   const handleLineaChange = async (idLinea) => {
@@ -65,8 +68,17 @@ export default function ModalBusquedaProductos({
     if (newPage > 0 && newPage <= totalPages) setCurrentPage(newPage);
   };
   const handleSearchTermChange = (e) => {
-    setSearchTerm(e.target.value);
+    setSearchTerm(e.target.value.toUpperCase());
+  };
+
+  const handleSearchSubmit = () => {
+    setSubmittedSearchTerm(searchTerm);
     setCurrentPage(1);
+  }
+  const handleKeyPress = (e) => {
+    if (e.key === 'Enter') {
+      handleSearchSubmit();
+    }
   };
 
   const handleStockChange = (e) => {
@@ -75,21 +87,17 @@ export default function ModalBusquedaProductos({
   }
 
 
-   useEffect(() => {
-     if (isOpen && initialSearchTerm) {
-       setSearchTerm(initialSearchTerm);
-     }
-
-     if (isOpen && !initialSearchTerm) {
-       setSearchTerm('');
-     }
-
-     if (isOpen){
+    useEffect(() => {
+   
+    if (isOpen) {
+      const initialUpper = initialSearchTerm?.toUpperCase() || '';
+      setSearchTerm(initialUpper);
+      setSubmittedSearchTerm(initialUpper); 
       setCurrentPage(1);
       setSoloConStock(true);
-     }
-   }, [initialSearchTerm, isOpen]);
-
+    
+    }
+  }, [initialSearchTerm, isOpen]);
 
   if (!isOpen) return null;
 
@@ -125,7 +133,15 @@ export default function ModalBusquedaProductos({
               onChange={handleSearchTermChange}
             />
           </div>
-          <button type="button" className="px-4 py-2 bg-blue-600 border-round">Buscar</button>
+          {/* Botón de búsqueda */}
+          <button
+            type="button"
+            className="px-4 py-2 bg-blue-600 border-round text-white rounded-lg text-sm hover:bg-blue-700 transition-colors"
+            onClick={handleSearchSubmit} 
+          >
+            Buscar
+          </button>
+
         </div>
 
         {/* Checkbox del stock */}
