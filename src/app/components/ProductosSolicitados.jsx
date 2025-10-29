@@ -1,7 +1,14 @@
 import React from 'react';
 
-export default function ProductosSolicitados({ items, onSugerenciaClick }) {
+export default function ProductosSolicitados({ items, onSugerenciaClick, onBuscarProductoClick }) {
   const isScrollable = items.length > 3;
+  const handleBuscarClick = (descripcion) => {
+    // Extrae las primeras palabras como término de búsqueda 
+    const terminoBusqueda = descripcion.split(' ').slice(0, 2).join(' ');
+    if (onBuscarProductoClick) {
+      onBuscarProductoClick(terminoBusqueda);
+    }
+  };
   
   return (
     <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200 flex flex-col">
@@ -44,7 +51,14 @@ export default function ProductosSolicitados({ items, onSugerenciaClick }) {
                       className="px-3 py-1 bg-blue-100 text-blue-700 text-xs font-semibold rounded-full hover:bg-blue-200" 
                       onClick={() => onSugerenciaClick(item.descripcion)}
                     >
-                      Ir a sugerencia
+                      Sugerencia
+                    </button>
+
+                    <button
+                        onClick={() => handleBuscarClick(item.descripcion)}
+                        className="px-2 py-1 bg-green-500 text-white text-xs font-semibold rounded hover:bg-green-600"
+                    >
+                        Buscar producto
                     </button>
                   </td>
                 </tr>

@@ -9,7 +9,8 @@ export const useCatalogoProductos = (
   searchTerm, 
   rubroId, 
   lineaId, 
-  familiaId
+  familiaId, 
+  conStock 
 ) => {
   const [productos, setProductos] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -17,12 +18,19 @@ export const useCatalogoProductos = (
   const [totalPages, setTotalPages] = useState(1); // Empezar en 1
 
   useEffect(() => {
+
+    if(!rubroId && !lineaId && !familiaId){
+      setProductos([]);
+      setTotalPages(1);
+      setLoading(false);
+      return;
+    }
+
     const fetchCatalogo = async () => {
       try {
         setLoading(true);
         setError(null);
 
-        // 2. Construimos los parámetros
         const params = new URLSearchParams({
           pagina: pagina,
           tamanoPagina: tamanoPagina, 
@@ -41,36 +49,31 @@ export const useCatalogoProductos = (
         if (familiaId) {
           params.set('familiaId', familiaId);
         }
+        if (conStock) {
+          params.set('conStock', 'true');
+        }
 
   
         const response = await fetch(
           `${API_BASE_URL}/catalogo/productos?${params.toString()}`
         );
 
-        if (!response.ok) {
+       if (!response.ok) {
           throw new Error(`Error HTTP ${response.status}: ${response.statusText}`);
         }
 
         const data = await response.json(); 
-        
+
         console.log(`Catálogo recibido (Página ${pagina}):`, data);
 
-        setProductos(data || []);
-        
-        if (data.length === 0 && pagina > 1) {
-          setTotalPages(pagina - 1);
-        } else if (data.length < tamanoPagina) {
-          setTotalPages(pagina);
-        } else {
-
-          setTotalPages(pagina + 1);
-        }
+        setProductos(data.productos || []); 
+        setTotalPages(data.totalPaginas || 1); 
         
       } catch (err) {
         console.error('Error al cargar catálogo de productos:', err);
         setError(err.message);
         setProductos([]);
-        setTotalPages(1); 
+        setTotalPages(1);
       } finally {
         setLoading(false);
       }
@@ -79,7 +82,7 @@ export const useCatalogoProductos = (
     fetchCatalogo();
     
 
-  }, [pagina, tamanoPagina, searchTerm, rubroId, lineaId, familiaId]); 
+  }, [pagina, tamanoPagina, searchTerm, rubroId, lineaId, familiaId, conStock]); 
   
   return { productos, loading, error, totalPages };
 };
