@@ -4,6 +4,7 @@ import { useTicketIdFromZendesk } from './hooks/useTicketIdFromZendesk';
 import { useLicitacionData } from './hooks/useLicitacionData';
 import { useIframeAutoResize } from './hooks/useIframeAutoResize';
 import { useProductosSoli } from './hooks/useProductosSoliData';
+import { useObtenerSugerencia } from './hooks/useObtenerSugerencia';
 
 import HeaderInfo from './components/HeaderInfo';
 import ProductosSolicitados from './components/ProductosSolicitados';
@@ -23,6 +24,8 @@ function App() {
   const { idLicitacion, loading: loadingTicket, error: errorTicket } = useTicketIdFromZendesk();
   const { data: licitacionData, loading: loadingLicitacion, error: errorLicitacion } = useLicitacionData(idLicitacion);
   const { productos: productosSolicitados, loading: loadingProductos, error: errorProductos } = useProductosSoli(idLicitacion);
+  const { obtenerSugerencia } = useObtenerSugerencia();
+  const [isLoadingSugerencia, setIsLoadingSugerencia] = useState(null);
 
   // (Estados de UI y Cotización - Sin cambios)
   const [itemsCotizacion, setItemsCotizacion] = useState([]);
@@ -47,6 +50,25 @@ function App() {
     productosSolicitados
   ]);
 
+  const handleSugerenciaClick = async (itemSolicitado) => {
+    setIsLoadingSugerencia(itemSolicitado.sku);
+    
+    try {
+      const resultado = await obtenerSugerencia(itemSolicitado);
+      if (resultado) {
+        setModalStockDataSucursal(resultado);
+      } else {
+        handleBuscarProductoClick(itemSolicitado.descripcion);
+      }
+
+    } catch (error) {
+      console.error("Fallo al obtener sugerencia:", error);
+      handleBuscarProductoClick(itemSolicitado.descripcion);
+    } finally {
+      setIsLoadingSugerencia(null); // Detiene la carga
+    }
+  };
+
   const handleBuscarProductoClick = useCallback((terminoBusqueda) => {
     console.log("Buscar producto clickeado con término:", terminoBusqueda); 
     setInitialSearchTerm(terminoBusqueda); 
@@ -69,8 +91,6 @@ const handleAgregarProductoDesdeModal = useCallback((producto, cantidad) => {
     setModalStockDataSucursal({ producto: productoParaModalSucursal, cantidad });
     setIsBusquedaOpen(false); 
   }, []);
-
-
 
 
   const handleAgregarDesdeSucursal = useCallback((producto, sucursal, cantidad) => {
@@ -107,7 +127,6 @@ const handleAgregarProductoDesdeModal = useCallback((producto, cantidad) => {
   }, []);
 
 
-
   const handleShowStock = useCallback((producto) => {
       setModalStockData(producto); 
   }, []);
@@ -127,6 +146,8 @@ const handleAgregarProductoDesdeModal = useCallback((producto, cantidad) => {
           <ProductosSolicitados
             items={productosSolicitados}
             onBuscarProductoClick={handleBuscarProductoClick}
+            onSugerenciaClick={handleSugerenciaClick}
+            loadingSku={isLoadingSugerencia}
           />
 
 

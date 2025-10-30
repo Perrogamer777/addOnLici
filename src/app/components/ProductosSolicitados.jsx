@@ -1,6 +1,6 @@
 import React from 'react';
 
-export default function ProductosSolicitados({ items, onSugerenciaClick, onBuscarProductoClick }) {
+export default function ProductosSolicitados({ items, onSugerenciaClick, loadingSku ,onBuscarProductoClick }) {
   const isScrollable = items.length > 3;
   const handleBuscarClick = (descripcion) => {
     // Extrae las primeras palabras como término de búsqueda 
@@ -46,17 +46,17 @@ export default function ProductosSolicitados({ items, onSugerenciaClick, onBusca
                   <td className="p-3 text-gray-500">{item.categoria}</td>
                   <td className="p-3 font-bold text-center">{item.cantidad}</td>
                   <td className="p-3 text-center">
-                    <button 
+
+                      <button 
                       type="button" 
                       className="px-3 py-1 bg-blue-100 text-blue-700 text-xs font-semibold rounded-full hover:bg-blue-200" 
-                      onClick={() => onSugerenciaClick(item.descripcion)}
-                    >
-                      Sugerencia
+                      onClick={() => onSugerenciaClick(item)} 
+                      disabled={loadingSku === item.sku}>
+                      {loadingSku === item.sku ? 'Buscando...' : 'Sugerencia'}
                     </button>
 
-                    <button
-                        onClick={() => handleBuscarClick(item.descripcion)}
-                        className="px-2 py-1 bg-green-500 text-white text-xs font-semibold rounded hover:bg-green-600"
+                    <button onClick={() => handleBuscarClick(item.descripcion)} 
+                    className="px-2 py-1 bg-green-500 text-white text-xs font-semibold rounded hover:bg-green-600"
                     >
                         Buscar producto
                     </button>
