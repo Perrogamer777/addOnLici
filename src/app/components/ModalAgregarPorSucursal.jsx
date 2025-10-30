@@ -7,9 +7,9 @@ export default function ModalAgregarPorSucursal({ modalData, onClose, onAgregarD
 
   if (!modalData) return null;
 
-  const { producto, cantidad } = modalData;
+  const { producto, cantidad, originalSku} = modalData;
   const handleAgregarClick = (sucursal) => {
-    onAgregarDesdeSucursal(producto, sucursal, cantidad);
+    onAgregarDesdeSucursal(producto, sucursal, cantidad, originalSku);
   };
 
   return (

@@ -32,7 +32,8 @@ export const useObtenerSugerencia = () => {
       
       return {
         producto: productoParaModal,
-        cantidad: itemSolicitado.cantidad
+        cantidad: itemSolicitado.cantidad,
+        originalSku: itemSolicitado.sku
       };
 
     } catch (err) {

@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback, useEffect } from 'react';
+import React, { useState, useRef, useCallback, useEffect,useMemo } from 'react';
 import { useClient } from './hooks/useClient';
 import { useTicketIdFromZendesk } from './hooks/useTicketIdFromZendesk';
 import { useLicitacionData } from './hooks/useLicitacionData';
@@ -93,7 +93,7 @@ const handleAgregarProductoDesdeModal = useCallback((producto, cantidad) => {
   }, []);
 
 
-  const handleAgregarDesdeSucursal = useCallback((producto, sucursal, cantidad) => {
+  const handleAgregarDesdeSucursal = useCallback((producto, sucursal, cantidad, originalSku) => { 
       const itemId = `${producto.id}-${sucursal.nombreSucursal}`;
       const nuevoItem = {
         id: itemId,
@@ -101,7 +101,8 @@ const handleAgregarProductoDesdeModal = useCallback((producto, cantidad) => {
         nombre: `${producto.nombreCobol} (Suc. ${sucursal.nombreSucursal})`,
         precioUnitario: producto.precioUnitario,
         cantidad: cantidad,
-        sucursal: sucursal.nombreSucursal
+        sucursal: sucursal.nombreSucursal,
+        originalSolicitadoSku: originalSku
       };
 
       setItemsCotizacion(prevItems => {
@@ -119,6 +120,11 @@ const handleAgregarProductoDesdeModal = useCallback((producto, cantidad) => {
       setModalStockDataSucursal(null);
   }, []);
 
+const skusAgregados = useMemo(() => 
+    new Set(itemsCotizacion.map(item => item.originalSolicitadoSku)),
+    [itemsCotizacion]
+  );
+
   const handleQuitarProducto = useCallback((itemId) => {
       setItemsCotizacion(prev => prev.filter(i => i.id !== itemId));
   }, []);
@@ -127,14 +133,23 @@ const handleAgregarProductoDesdeModal = useCallback((producto, cantidad) => {
   }, []);
 
 
-  const handleShowStock = useCallback((producto) => {
+  const handleShowStock = useCallback((producto) => {    
       setModalStockData(producto); 
   }, []);
   const handleCloseStock = useCallback(() => setModalStockData(null), []);
   const handleSaveProgress = useCallback(() => { /* ... */ }, []);
 
 
-  if (loadingTicket || loadingLicitacion) { /* ... */ }
+  if (loadingTicket || loadingLicitacion) {
+    return (
+      <div className="flex items-center justify-center h-screen bg-gray-100">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Cargando información de la licitación...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <>
@@ -148,6 +163,7 @@ const handleAgregarProductoDesdeModal = useCallback((producto, cantidad) => {
             onBuscarProductoClick={handleBuscarProductoClick}
             onSugerenciaClick={handleSugerenciaClick}
             loadingSku={isLoadingSugerencia}
+            skusAgregados={skusAgregados}
           />
 
 

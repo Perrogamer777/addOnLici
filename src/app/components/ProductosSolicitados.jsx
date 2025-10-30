@@ -1,7 +1,17 @@
+// app.zip/components/ProductosSolicitados.jsx
+
 import React from 'react';
 
-export default function ProductosSolicitados({ items, onSugerenciaClick, loadingSku ,onBuscarProductoClick }) {
+export default function ProductosSolicitados({ 
+  items, 
+  onSugerenciaClick, 
+  onBuscarProductoClick, 
+  loadingSku, 
+  skusAgregados // <-- Prop recibida
+}) {
+  
   const isScrollable = items.length > 3;
+
   const handleBuscarClick = (descripcion) => {
     // Extrae las primeras palabras como término de búsqueda 
     const terminoBusqueda = descripcion.split(' ').slice(0, 2).join(' ');
@@ -39,30 +49,54 @@ export default function ProductosSolicitados({ items, onSugerenciaClick, loading
                 </td>
               </tr>
             ) : (
-              items.map((item, index) => (
-                <tr key={`${item.sku}-${index}`} className="hover:bg-gray-50">
-                  <td className="p-3 text-gray-500">{item.sku}</td>
-                  <td className="p-3 font-medium text-gray-800">{item.descripcion}</td>
-                  <td className="p-3 text-gray-500">{item.categoria}</td>
-                  <td className="p-3 font-bold text-center">{item.cantidad}</td>
-                  <td className="p-3 text-center">
+              items.map((item, index) => {
+                
+                // AQUÍ ESTÁ LA LÓGICA PRINCIPAL
+                // Comprueba si el SKU del item solicitado está en el Set de SKUs agregados
+                const isAgregado = skusAgregados && skusAgregados.has(item.sku);
 
-                      <button 
-                      type="button" 
-                      className="px-3 py-1 bg-blue-100 text-blue-700 text-xs font-semibold rounded-full hover:bg-blue-200" 
-                      onClick={() => onSugerenciaClick(item)} 
-                      disabled={loadingSku === item.sku}>
-                      {loadingSku === item.sku ? 'Buscando...' : 'Sugerencia'}
-                    </button>
+                return (
+                  <tr key={`${item.sku}-${index}`} className={`hover:bg-gray-50 ${isAgregado ? 'bg-green-50' : ''}`}>
+                    <td className="p-3 text-gray-500">{item.sku}</td>
+                    <td className="p-3 font-medium text-gray-800">{item.descripcion}</td>
+                    <td className="p-3 text-gray-500">{item.categoria}</td>
+                    <td className="p-3 font-bold text-center">{item.cantidad}</td>
+                    <td className="p-3 text-center">
 
-                    <button onClick={() => handleBuscarClick(item.descripcion)} 
-                    className="px-2 py-1 bg-green-500 text-white text-xs font-semibold rounded hover:bg-green-600"
-                    >
-                        Buscar producto
-                    </button>
-                  </td>
-                </tr>
-              ))
+                      {/* RENDERIZADO CONDICIONAL */}
+                      {isAgregado ? (
+                        
+                        // 1. Si está agregado, muestra el indicador
+                        <span className="px-3 py-1 bg-green-100 text-green-800 text-xs font-bold rounded-full">
+                          ✔ Agregado
+                        </span>
+
+                      ) : (
+                        
+                        // 2. Si NO está agregado, muestra los botones
+                        <div className="flex gap-2 justify-center">
+                          <button 
+                            type="button" 
+                            className="px-3 py-1 bg-blue-100 text-blue-700 text-xs font-semibold rounded-full hover:bg-blue-200" 
+                            onClick={() => onSugerenciaClick(item)} 
+                            disabled={loadingSku === item.sku}
+                          >
+                            {loadingSku === item.sku ? 'Buscando...' : 'Sugerencia'}
+                          </button>
+
+                          <button 
+                            onClick={() => handleBuscarClick(item.descripcion)} 
+                            className="px-2 py-1 bg-green-500 text-white text-xs font-semibold rounded hover:bg-green-600"
+                          >
+                            Buscar producto
+                          </button>
+                        </div>
+                      )}
+
+                    </td>
+                  </tr>
+                );
+              })
             )}
           </tbody>
         </table>
@@ -85,4 +119,3 @@ export default function ProductosSolicitados({ items, onSugerenciaClick, loading
     </div>
   );
 }
-
