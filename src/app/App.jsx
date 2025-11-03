@@ -14,6 +14,7 @@ import SaveConfirmation from './components/SaveConfirmation';
 import ModalGenerarCotizacion from './components/ModalGenerarCotizacion';
 import ModalAgregarPorSucursal from './components/ModalAgregarPorSucursal';
 import ModalBuscarProductos from './components/ModalBuscarProductos';
+import ModalReporteAgregado from './components/ModalReporteAgregado';
 
 
 
@@ -26,6 +27,8 @@ function App() {
   const { productos: productosSolicitados, loading: loadingProductos, error: errorProductos } = useProductosSoli(idLicitacion);
   const { obtenerSugerencia } = useObtenerSugerencia();
   const [isLoadingSugerencia, setIsLoadingSugerencia] = useState(null);
+  const [isLoadingSugerencias, setIsLoadingSugerencias] = useState(false);
+
 
   // (Estados de UI y Cotización - Sin cambios)
   const [itemsCotizacion, setItemsCotizacion] = useState([]);
@@ -38,6 +41,8 @@ function App() {
   const [modalStockDataSucursal, setModalStockDataSucursal] = useState(null);
   const [isBusquedaOpen, setIsBusquedaOpen] = useState(false);
   const [initialSearchTerm, setInitialSearchTerm] = useState('');
+  const [isReportModalOpen, setIsReportModalOpen] = useState(false);
+  const [reporteItemsFallidos, setReporteItemsFallidos] = useState([]);
 
 
 
@@ -49,6 +54,91 @@ function App() {
     loadingProductos,
     productosSolicitados
   ]);
+
+// Función para agregar todas las sugerencias
+  const handleAgregarTodasSugerencias = useCallback(async () => {
+    setIsLoadingSugerencias(true);
+    setReporteItemsFallidos([]); 
+
+    const skusEnCotizacion = new Set(itemsCotizacion.map(item => item.originalSolicitadoSku));
+    const itemsParaBuscar = productosSolicitados.filter(
+      p => !skusEnCotizacion.has(p.sku)
+    );
+
+    if (itemsParaBuscar.length === 0) {
+      console.log("No hay productos nuevos para agregar.");
+      setIsLoadingSugerencias(false);
+      return;
+    }
+
+    const promesas = itemsParaBuscar.map(item => obtenerSugerencia(item));
+    const resultados = await Promise.allSettled(promesas);
+    const itemsNuevosParaCotizacion = [];
+    const itemsFallidosParaReporte = []; 
+
+    resultados.forEach((res, index) => {
+      const itemSolicitadoOriginal = itemsParaBuscar[index]; // El producto que se solicitó
+
+      if (res.status === 'fulfilled' && res.value !== null) {
+        const { producto, cantidad, originalSku } = res.value;
+
+        if (producto.stockTotal > 0) {
+          itemsNuevosParaCotizacion.push({
+            id: `${producto.id}-PENDIENTE`, 
+            sku: producto.id,
+            nombre: `${producto.nombreCobol} (Suc. por asignar)`,
+            precioUnitario: producto.precioUnitario,
+            cantidad: cantidad,
+            sucursal: null,
+            originalSolicitadoSku: originalSku
+          });
+        } else {
+          itemsFallidosParaReporte.push({
+            ...itemSolicitadoOriginal,
+            razon: "Sugerencia encontrada sin stock"
+          });
+        }
+      } else {
+        itemsFallidosParaReporte.push({
+          ...itemSolicitadoOriginal,
+          razon: "No se encontró sugerencia"
+        });
+      }
+    });
+
+
+    if (itemsNuevosParaCotizacion.length > 0) {
+      setItemsCotizacion(prevItems => [...prevItems, ...itemsNuevosParaCotizacion]);
+    }
+    console.log(`Se agregaron ${itemsNuevosParaCotizacion.length} productos.`);
+    console.log(`Fallaron ${itemsFallidosParaReporte.length} productos.`);
+
+    setReporteItemsFallidos(itemsFallidosParaReporte);
+    setIsReportModalOpen(true);
+    setIsLoadingSugerencias(false);
+
+  }, [productosSolicitados, itemsCotizacion, obtenerSugerencia]);
+
+
+  // funcion para reasignar sucursal a un item que se agregó con las sugerencias
+  const handleReasignarSucursal = useCallback((itemParaAsignar) => {
+
+    setItemsCotizacion(prev => prev.filter(i => i.id !== itemParaAsignar.id));
+  
+    const productoParaModal = {
+      id: itemParaAsignar.sku,
+      nombreCobol: itemParaAsignar.nombre.replace(' (Suc. por asignar)', ''), 
+      precioUnitario: itemParaAsignar.precioUnitario
+    };
+    
+    setModalStockDataSucursal({
+      producto: productoParaModal,
+      cantidad: itemParaAsignar.cantidad,
+      originalSku: itemParaAsignar.originalSolicitadoSku
+    });
+
+  }, []); 
+
 
   const handleSugerenciaClick = async (itemSolicitado) => {
     setIsLoadingSugerencia(itemSolicitado.sku);
@@ -164,6 +254,8 @@ const skusAgregados = useMemo(() =>
             onSugerenciaClick={handleSugerenciaClick}
             loadingSku={isLoadingSugerencia}
             skusAgregados={skusAgregados}
+            onAgregarTodas={handleAgregarTodasSugerencias}
+            isLoadingSugerencias={isLoadingSugerencias}
           />
 
 
@@ -177,6 +269,7 @@ const skusAgregados = useMemo(() =>
             isMobile={isMobile}
             productAddedToast={productAddedToast}
             lastAddedProduct={lastAddedProduct}
+            onReasignarSucursal={handleReasignarSucursal}
           />
         </div>
       </main>
@@ -198,6 +291,12 @@ const skusAgregados = useMemo(() =>
         onClose={() => setIsBusquedaOpen(false)}
         onProductoSeleccionado={handleAgregarProductoDesdeModal} 
         onStockClick={handleShowStock} 
+      />
+      {/* Modal de Reporte de Agregado Automático */}
+      <ModalReporteAgregado
+        isOpen={isReportModalOpen}
+        onClose={() => setIsReportModalOpen(false)}
+        items={reporteItemsFallidos}
       />
 
       {toastState !== 'idle' && <SaveConfirmation toastState={toastState} />}

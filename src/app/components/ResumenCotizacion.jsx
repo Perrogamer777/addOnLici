@@ -12,7 +12,7 @@ export default function ResumenCotizacion({
     productAddedToast,
     lastAddedProduct
 }) {
-    const neto = items.reduce((acc, item) => acc + (item.precioUnitario * item.cantidad), 0);
+    const neto = items.reduce((acc, item) => acc + ((item.precioUnitario || 0) * item.cantidad), 0);
     const iva = neto * 0.19;
     const total = neto + iva;
 
@@ -105,7 +105,7 @@ export default function ResumenCotizacion({
                             
                             <div className="text-right">
                                 <div className="text-lg font-bold text-gray-900">
-                                    ${item.precioUnitario.toLocaleString('es-CL')} c/u
+                                    ${(item.precioUnitario || 0).toLocaleString('es-CL')} c/u
                                 </div>
                             </div>
                         </div>
@@ -114,7 +114,7 @@ export default function ResumenCotizacion({
                         <div className="flex justify-between items-center mt-2 pt-2 border-t border-gray-200">
                             <span className="text-sm text-gray-600">Subtotal</span>
                             <span className="font-bold text-lg">
-                                ${(item.cantidad * item.precioUnitario).toLocaleString('es-CL')}
+                                ${(item.cantidad * (item.precioUnitario || 0)).toLocaleString('es-CL')}
                             </span>
                         </div>
                     </div>

@@ -15,7 +15,7 @@ export default function FilaProducto({ producto, onAgregar, onStockClick }) {
 
             marca: producto.marca || 'N/A',
             categoria: producto.categoria || 'N/A',
-            precioUnitario: producto.precioUnitario || 0,
+            precioUnitario: producto.precio || 0,
             stock: stock
         };
         onAgregar(productoParaCotizacion, cantidad);

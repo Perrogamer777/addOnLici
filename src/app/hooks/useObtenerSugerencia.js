@@ -24,14 +24,18 @@ export const useObtenerSugerencia = () => {
         cors: true
       });
 
-      const productoParaModal = {
+      const productoTransformado = {
         id: productoTop1.id,
         nombreCobol: productoTop1.nombreCobol,
-        precioUnitario: productoTop1.precio || 0
+        precio: productoTop1.precio || 0,
+        precioUnitario: productoTop1.precio || 0,
+        stockTotal: productoTop1.stockTotal || 0,
+        marca: productoTop1.marca,
+        categoria: productoTop1.categoria
       };
       
       return {
-        producto: productoParaModal,
+        producto: productoTransformado,
         cantidad: itemSolicitado.cantidad,
         originalSku: itemSolicitado.sku
       };

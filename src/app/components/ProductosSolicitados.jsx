@@ -1,5 +1,5 @@
 // app.zip/components/ProductosSolicitados.jsx
-
+import { BoltIcon } from '@heroicons/react/24/solid';
 import React from 'react';
 
 export default function ProductosSolicitados({ 
@@ -7,7 +7,9 @@ export default function ProductosSolicitados({
   onSugerenciaClick, 
   onBuscarProductoClick, 
   loadingSku, 
-  skusAgregados // <-- Prop recibida
+  skusAgregados,
+  onAgregarTodas,
+  isLoadingSugerencias
 }) {
   
   const isScrollable = items.length > 3;
@@ -19,15 +21,72 @@ export default function ProductosSolicitados({
       onBuscarProductoClick(terminoBusqueda);
     }
   };
+
+    // animación de carga 
+  const SpinnerIcon = () => (
+  <svg 
+    className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" 
+    xmlns="http://www.w3.org/2000/svg" 
+    fill="none" 
+    viewBox="0 0 24 24"
+  >
+    <circle 
+      className="opacity-25" 
+      cx="12" 
+      cy="12" 
+      r="10" 
+      stroke="currentColor" 
+      strokeWidth="4"
+    ></circle>
+    <path 
+      className="opacity-75" 
+      fill="currentColor" 
+      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+    ></path>
+  </svg>
+);
+
+  const BoltIcon = () => (
+  <svg 
+    className="w-5 h-5 flex-shrink-0" 
+    fill="currentColor" 
+    viewBox="0 0 24 24"
+  >
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+  </svg>
+);
   
   return (
     <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200 flex flex-col">
-      <div className="flex justify-between items-center mb-3">
-        <h3 className="text-lg font-semibold">Productos Solicitados</h3>
-        <span className="bg-blue-100 text-blue-800 text-xs font-medium px-2.5 py-0.5 rounded-full">
-          {items.length} productos
-        </span>
+      <div className="flex justify-between items-center mb-3"> 
+        <h3 className="text-lg font-semibold">
+          Productos Solicitados
+          <span className="bg-blue-100 text-blue-800 text-xs font-medium px-2.5 py-0.5 rounded-full ml-2">
+            {items.length} productos
+          </span>
+        </h3>
+        
+        <button
+          type="button"
+          onClick={onAgregarTodas}
+          disabled={isLoadingSugerencias || items.length === 0}
+          className="px-4 py-2 bg-blue-600 text-white text-xs font-semibold rounded-lg hover:bg-blue-700 transition-all flex items-center gap-2 disabled:bg-gray-400 disabled:cursor-not-allowed"
+        >
+          {isLoadingSugerencias ? (
+            <>
+              <SpinnerIcon /> 
+              Buscando productos...
+            </>
+          ) : (
+            <>
+              <BoltIcon />
+              Agregar Todas las Sugerencias
+            </>
+          )}
+        </button>
       </div>
+
+      
       
       {/* Contenedor con altura fija y scroll cuando hay más de 3 items */}
       <div className="overflow-y-auto relative" style={{ maxHeight: '200px' }}>
@@ -51,8 +110,6 @@ export default function ProductosSolicitados({
             ) : (
               items.map((item, index) => {
                 
-                // AQUÍ ESTÁ LA LÓGICA PRINCIPAL
-                // Comprueba si el SKU del item solicitado está en el Set de SKUs agregados
                 const isAgregado = skusAgregados && skusAgregados.has(item.sku);
 
                 return (
@@ -66,14 +123,14 @@ export default function ProductosSolicitados({
                       {/* RENDERIZADO CONDICIONAL */}
                       {isAgregado ? (
                         
-                        // 1. Si está agregado, muestra el indicador
+                        // Si está agregado, muestra el indicador
                         <span className="px-3 py-1 bg-green-100 text-green-800 text-xs font-bold rounded-full">
                           ✔ Agregado
                         </span>
 
                       ) : (
                         
-                        // 2. Si NO está agregado, muestra los botones
+                        // Si NO está agregado, muestra los botones
                         <div className="flex gap-2 justify-center">
                           <button 
                             type="button" 
