@@ -10,7 +10,8 @@ export default function ResumenCotizacion({
     onOpenModalGenerarCotizacion, 
     isMobile,
     productAddedToast,
-    lastAddedProduct
+    lastAddedProduct,
+    onReasignarSucursal
 }) {
     const neto = items.reduce((acc, item) => acc + ((item.precioUnitario || 0) * item.cantidad), 0);
     const iva = neto * 0.19;
@@ -55,21 +56,38 @@ export default function ResumenCotizacion({
                 )}
                 
                 {items.map(item => (
-                    <div key={item.itemId} className="bg-gray-50 p-3 rounded-lg border">
+                    <div 
+                        key={item.itemId || item.id} 
+                        className="bg-gray-50 p-3 rounded-lg border-2 border-blue-300"
+                    >
                         {/* Header del producto */}
                         <div className="flex justify-between items-start mb-2">
                             <div className="flex-1">
+                                {/* Badge de referencia al SKU solicitado */}
+                                {item.originalSolicitadoSku && (
+                                    <div className="flex items-center gap-1 mb-1">
+                                        <svg className="w-3 h-3 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path>
+                                        </svg>
+                                        <span className="text-xs font-medium text-blue-700 bg-blue-100 px-2 py-0.5 rounded-full">
+                                            Ref: {item.originalSolicitadoSku}
+                                        </span>
+                                    </div>
+                                )}
+                                
                                 <h4 className="font-semibold text-gray-900 text-sm leading-tight">
                                     {item.nombre}
                                 </h4>
                                 <p className="text-xs text-gray-500 mt-1">
-                                    SKU: {item.id} • Uni solicitadas: {item.cantidad}
+                                    SKU: {item.sku} • Cantidad: {item.cantidad}
                                 </p>
                             </div>
+                            
                             <button 
                                 type="button" 
                                 onClick={() => onRemove(item.id)} 
                                 className="text-red-500 hover:text-red-700 p-1 ml-2"
+                                title="Eliminar producto"
                             >
                                 <TrashIcon />
                             </button>

@@ -1,7 +1,3 @@
-// app.zip/components/ProductosSolicitados.jsx
-import { BoltIcon } from '@heroicons/react/24/solid';
-import React from 'react';
-
 export default function ProductosSolicitados({ 
   items, 
   onSugerenciaClick, 
@@ -9,16 +5,18 @@ export default function ProductosSolicitados({
   loadingSku, 
   skusAgregados,
   onAgregarTodas,
-  isLoadingSugerencias
+  isLoadingSugerencias,
+  onLimpiarSugerencias,
+  sugerenciasAgregadas
 }) {
   
   const isScrollable = items.length > 3;
 
-  const handleBuscarClick = (descripcion) => {
+  const handleBuscarClick = (descripcion, skuSolicitado = null) => {
     // Extrae las primeras palabras como término de búsqueda 
     const terminoBusqueda = descripcion.split(' ').slice(0, 2).join(' ');
     if (onBuscarProductoClick) {
-      onBuscarProductoClick(terminoBusqueda);
+      onBuscarProductoClick(terminoBusqueda, skuSolicitado);
     }
   };
 
@@ -66,24 +64,41 @@ export default function ProductosSolicitados({
           </span>
         </h3>
         
-        <button
-          type="button"
-          onClick={onAgregarTodas}
-          disabled={isLoadingSugerencias || items.length === 0}
-          className="px-4 py-2 bg-blue-600 text-white text-xs font-semibold rounded-lg hover:bg-blue-700 transition-all flex items-center gap-2 disabled:bg-gray-400 disabled:cursor-not-allowed"
-        >
-          {isLoadingSugerencias ? (
-            <>
-              <SpinnerIcon /> 
-              Buscando productos...
-            </>
-          ) : (
-            <>
-              <BoltIcon />
-              Agregar Todas las Sugerencias
-            </>
+        <div className="flex gap-2">
+          {/* Botón de Limpiar Sugerencias - Solo visible después de agregar */}
+          {sugerenciasAgregadas && (
+            <button
+              type="button"
+              onClick={onLimpiarSugerencias}
+              className="px-4 py-2 bg-red-500 text-white text-xs font-semibold rounded-lg hover:bg-red-600 transition-all flex items-center gap-2"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+              </svg>
+              Limpiar Sugerencias
+            </button>
           )}
-        </button>
+          
+          {/* Botón de Agregar Todas las Sugerencias */}
+          <button
+            type="button"
+            onClick={onAgregarTodas}
+            disabled={isLoadingSugerencias || items.length === 0}
+            className="px-4 py-2 bg-blue-600 text-white text-xs font-semibold rounded-lg hover:bg-blue-700 transition-all flex items-center gap-2 disabled:bg-gray-400 disabled:cursor-not-allowed"
+          >
+            {isLoadingSugerencias ? (
+              <>
+                <SpinnerIcon /> 
+                Buscando productos...
+              </>
+            ) : (
+              <>
+                <BoltIcon />
+                Agregar Todas las Sugerencias
+              </>
+            )}
+          </button>
+        </div>
       </div>
 
       
@@ -113,24 +128,40 @@ export default function ProductosSolicitados({
                 const isAgregado = skusAgregados && skusAgregados.has(item.sku);
 
                 return (
-                  <tr key={`${item.sku}-${index}`} className={`hover:bg-gray-50 ${isAgregado ? 'bg-green-50' : ''}`}>
+                  <tr key={`${item.sku}-${index}`} className={`hover:bg-gray-50 transition-colors ${isAgregado ? 'bg-blue-50 border-l-4 border-blue-400' : ''}`}>
                     <td className="p-3 text-gray-500">{item.sku}</td>
                     <td className="p-3 font-medium text-gray-800">{item.descripcion}</td>
                     <td className="p-3 text-gray-500">{item.categoria}</td>
                     <td className="p-3 font-bold text-center">{item.cantidad}</td>
                     <td className="p-3 text-center">
 
-                      {/* RENDERIZADO CONDICIONAL */}
                       {isAgregado ? (
                         
-                        // Si está agregado, muestra el indicador
-                        <span className="px-3 py-1 bg-green-100 text-green-800 text-xs font-bold rounded-full">
-                          ✔ Agregado
-                        </span>
+                        // Si está agregado, muestra el indicador y botón de cambiar
+                        <div className="flex gap-2 justify-center items-center">
+                          <span className="px-3 py-1 bg-blue-600 text-white text-xs font-bold rounded-full flex items-center gap-1">
+                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
+                            </svg>
+                            Agregado
+                          </span>
+                          
+                          {/* Botón para cambiar producto */}
+                          <button 
+                            onClick={() => handleBuscarClick(item.descripcion, item.sku)} 
+                            className="px-2 py-1 bg-orange-500 text-white text-xs font-semibold rounded hover:bg-orange-600 flex items-center gap-1"
+                            title="Cambiar por otro producto"
+                          >
+                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path>
+                            </svg>
+                            Cambiar
+                          </button>
+                        </div>
 
                       ) : (
                         
-                        // Si NO está agregado, muestra los botones
+                        // Si no está agregado, muestra los botones
                         <div className="flex gap-2 justify-center">
                           <button 
                             type="button" 

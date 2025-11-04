@@ -28,6 +28,7 @@ function App() {
   const { obtenerSugerencia } = useObtenerSugerencia();
   const [isLoadingSugerencia, setIsLoadingSugerencia] = useState(null);
   const [isLoadingSugerencias, setIsLoadingSugerencias] = useState(false);
+  const [sugerenciasAgregadas, setSugerenciasAgregadas] = useState(false);
 
 
   // (Estados de UI y Cotización - Sin cambios)
@@ -41,6 +42,7 @@ function App() {
   const [modalStockDataSucursal, setModalStockDataSucursal] = useState(null);
   const [isBusquedaOpen, setIsBusquedaOpen] = useState(false);
   const [initialSearchTerm, setInitialSearchTerm] = useState('');
+  const [skuSolicitadoActual, setSkuSolicitadoActual] = useState(null); // Para rastrear qué producto se está reemplazando
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
   const [reporteItemsFallidos, setReporteItemsFallidos] = useState([]);
 
@@ -109,6 +111,7 @@ function App() {
 
     if (itemsNuevosParaCotizacion.length > 0) {
       setItemsCotizacion(prevItems => [...prevItems, ...itemsNuevosParaCotizacion]);
+      setSugerenciasAgregadas(true); // Activar el botón de limpiar
     }
     console.log(`Se agregaron ${itemsNuevosParaCotizacion.length} productos.`);
     console.log(`Fallaron ${itemsFallidosParaReporte.length} productos.`);
@@ -118,6 +121,15 @@ function App() {
     setIsLoadingSugerencias(false);
 
   }, [productosSolicitados, itemsCotizacion, obtenerSugerencia]);
+
+  // Función para limpiar/quitar las sugerencias agregadas automáticamente
+  const handleLimpiarSugerencias = useCallback(() => {
+    // Filtra solo los items que tienen -PENDIENTE en su ID (agregados automáticamente)
+    setItemsCotizacion(prevItems => 
+      prevItems.filter(item => !item.id.includes('-PENDIENTE'))
+    );
+    setSugerenciasAgregadas(false);
+  }, []);
 
 
   // funcion para reasignar sucursal a un item que se agregó con las sugerencias
@@ -159,9 +171,10 @@ function App() {
     }
   };
 
-  const handleBuscarProductoClick = useCallback((terminoBusqueda) => {
+  const handleBuscarProductoClick = useCallback((terminoBusqueda, skuSolicitado = null) => {
     console.log("Buscar producto clickeado con término:", terminoBusqueda); 
     setInitialSearchTerm(terminoBusqueda); 
+    setSkuSolicitadoActual(skuSolicitado); // Guardar el SKU solicitado si se está reemplazando
     setIsBusquedaOpen(true); 
   }, []); 
 
@@ -185,6 +198,10 @@ const handleAgregarProductoDesdeModal = useCallback((producto, cantidad) => {
 
   const handleAgregarDesdeSucursal = useCallback((producto, sucursal, cantidad, originalSku) => { 
       const itemId = `${producto.id}-${sucursal.nombreSucursal}`;
+      
+      // Usar el SKU solicitado actual si existe (modo reemplazo), sino usar el originalSku
+      const skuFinal = skuSolicitadoActual || originalSku;
+      
       const nuevoItem = {
         id: itemId,
         sku: producto.id,
@@ -192,23 +209,30 @@ const handleAgregarProductoDesdeModal = useCallback((producto, cantidad) => {
         precioUnitario: producto.precioUnitario,
         cantidad: cantidad,
         sucursal: sucursal.nombreSucursal,
-        originalSolicitadoSku: originalSku
+        originalSolicitadoSku: skuFinal
       };
 
       setItemsCotizacion(prevItems => {
-        const itemExistente = prevItems.find(item => item.id === itemId);
+        // Si estamos en modo reemplazo, eliminar productos anteriores con el mismo SKU solicitado
+        let itemsFiltrados = prevItems;
+        if (skuSolicitadoActual) {
+          itemsFiltrados = prevItems.filter(item => item.originalSolicitadoSku !== skuSolicitadoActual);
+        }
+        
+        const itemExistente = itemsFiltrados.find(item => item.id === itemId);
         if (itemExistente) {
-          return prevItems.map(item =>
+          return itemsFiltrados.map(item =>
             item.id === itemId
               ? { ...item, cantidad: item.cantidad + cantidad } 
               : item
           );
         }
-        return [...prevItems, nuevoItem];
+        return [...itemsFiltrados, nuevoItem];
       });
 
       setModalStockDataSucursal(null);
-  }, []);
+      setSkuSolicitadoActual(null); // Limpiar el SKU solicitado después de agregar
+  }, [skuSolicitadoActual]);
 
 const skusAgregados = useMemo(() => 
     new Set(itemsCotizacion.map(item => item.originalSolicitadoSku)),
@@ -256,6 +280,8 @@ const skusAgregados = useMemo(() =>
             skusAgregados={skusAgregados}
             onAgregarTodas={handleAgregarTodasSugerencias}
             isLoadingSugerencias={isLoadingSugerencias}
+            onLimpiarSugerencias={handleLimpiarSugerencias}
+            sugerenciasAgregadas={sugerenciasAgregadas}
           />
 
 
