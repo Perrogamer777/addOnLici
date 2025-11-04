@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 
 const TrashIcon = () => <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>;
 
@@ -15,6 +15,7 @@ export default function ResumenCotizacion({
     onReasignarSucursal,
     onDestacarProducto
 }) {
+    const [saveState, setSaveState] = useState('idle'); // idle | saving | success | error
     // Calcular neto usando precioFinal si está definido; si no, usar precio de tienda o unitario
     const neto = items.reduce((acc, item) => {
         const unit = (item.precioFinal ?? item.precioTienda ?? item.precioUnitario ?? 0);
@@ -47,10 +48,41 @@ export default function ResumenCotizacion({
                 </div>
                 <button
                     type="button"
-                    onClick={onSave}
-                    className="px-3 py-1 bg-blue-500 text-white text-xs font-semibold rounded hover:bg-blue-600 transition-colors"
+                    onClick={async () => {
+                        if (saveState === 'saving') return;
+                        try {
+                            setSaveState('saving');
+                            const ok = await (onSave ? onSave() : Promise.resolve(false));
+                            setSaveState(ok ? 'success' : 'error');
+                        } catch (e) {
+                            setSaveState('error');
+                        } finally {
+                            setTimeout(() => setSaveState('idle'), 2000);
+                        }
+                    }}
+                    disabled={saveState === 'saving'}
+                    className={`px-3 py-1 text-xs font-semibold rounded transition-colors flex items-center gap-2
+                        ${saveState === 'success' ? 'bg-green-600 text-white hover:bg-green-600' : ''}
+                        ${saveState === 'error' ? 'bg-red-600 text-white hover:bg-red-600' : ''}
+                        ${saveState === 'saving' ? 'bg-blue-400 text-white cursor-wait' : ''}
+                        ${saveState === 'idle' ? 'bg-blue-500 text-white hover:bg-blue-600' : ''}
+                    `}
                 >
-                    Guardar
+                    {saveState === 'saving' && (
+                        <svg className="animate-spin -ml-1 mr-1 h-4 w-4 text-white" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                        </svg>
+                    )}
+                    {saveState === 'idle' && 'Guardar'}
+                    {saveState === 'saving' && 'Guardando…'}
+                    {saveState === 'success' && (
+                        <>
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7"></path></svg>
+                            Guardado
+                        </>
+                    )}
+                    {saveState === 'error' && 'Error al guardar'}
                 </button>
             </div>
             

@@ -3,7 +3,6 @@ import { useStockSucursalData } from '../hooks/useStockSucursalData';
 export default function ModalAgregarPorSucursal({ modalData, onClose, onAgregarDesdeSucursal }) {
 
   const { stockSucursales, loading, error } = useStockSucursalData(modalData?.producto?.id);
-  console.log('id del producto', modalData?.producto?.id);
 
   if (!modalData) return null;
 

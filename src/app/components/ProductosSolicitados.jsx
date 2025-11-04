@@ -30,7 +30,8 @@ export default function ProductosSolicitados({
     // Extrae las primeras palabras como término de búsqueda 
     const terminoBusqueda = descripcion.split(' ').slice(0, 2).join(' ');
     if (onBuscarProductoClick) {
-      onBuscarProductoClick(terminoBusqueda, skuSolicitado);
+      // pasar nombre del producto al modal 
+      onBuscarProductoClick(terminoBusqueda, skuSolicitado, descripcion);
     }
   };
 
