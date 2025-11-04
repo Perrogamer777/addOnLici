@@ -7,6 +7,7 @@ export default function ResumenCotizacion({
     onRemove, 
     onSave, 
     onUpdateCantidad, 
+    onUpdatePrecioFinal,
     onOpenModalGenerarCotizacion, 
     isMobile,
     productAddedToast,
@@ -14,7 +15,11 @@ export default function ResumenCotizacion({
     onReasignarSucursal,
     onDestacarProducto
 }) {
-    const neto = items.reduce((acc, item) => acc + ((item.precioUnitario || 0) * item.cantidad), 0);
+    // Calcular neto usando precioFinal si está definido; si no, usar precio de tienda o unitario
+    const neto = items.reduce((acc, item) => {
+        const unit = (item.precioFinal ?? item.precioTienda ?? item.precioUnitario ?? 0);
+        return acc + unit * item.cantidad;
+    }, 0);
     const iva = neto * 0.19;
     const total = neto + iva;
 
@@ -64,7 +69,7 @@ export default function ResumenCotizacion({
                         {/* Header del producto */}
                         <div className="flex justify-between items-start mb-2">
                             <div className="flex-1">
-                                {/* Badge de referencia al SKU solicitado - Clickeable */}
+                                {/* Badge de referencia al SKU solicitado */}
                                 {item.originalSolicitadoSku && (
                                     <div className="flex items-center gap-1 mb-1">
                                         <svg className="w-3 h-3 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -127,18 +132,46 @@ export default function ResumenCotizacion({
                                 </button>
                             </div>
                             
-                            <div className="text-right">
-                                <div className="text-lg font-bold text-gray-900">
-                                    ${(item.precioUnitario || 0).toLocaleString('es-CL')} c/u
+                        <div className="flex justify-between items-center">
+                            <div className="flex items-center gap-2">
+                            </div>
+                            {/* Grupo de precios */}
+                            <div className="flex items-end gap-4">
+                                {/* Precio tienda */}
+                                <div className="text-right w-32">
+                                    <div className="text-[12px] text-gray-500 leading-none mb-1">Precio tienda</div>
+                                    <div className="h-9 flex items-center justify-end text-sm font-semibold text-gray-900">
+                                        ${((item.precioTienda ?? item.precioUnitario) || 0).toLocaleString('es-CL')} c/u
+                                    </div>
+                                </div>
+
+                                {/* Precio final (editable) */}
+                                <div className="text-right w-32">
+                                    <label className="block text-[12px] text-gray-500 leading-none mb-1">Precio final</label>
+                                    <input
+                                        type="number"
+                                        min="0"
+                                        step="1"
+                                        value={Number(item.precioFinal ?? item.precioTienda ?? item.precioUnitario ?? 0)}
+                                        onChange={(e) => {
+                                            const val = parseInt(e.target.value, 10);
+                                            onUpdatePrecioFinal && onUpdatePrecioFinal(item.id, Number.isFinite(val) ? val : 0);
+                                        }}
+                                        className="h-9 w-20 text-right border border-gray-300 rounded px-2 text-sm"
+                                    />
                                 </div>
                             </div>
+                        </div>
+
                         </div>
                         
                         {/* Subtotal del producto */}
                         <div className="flex justify-between items-center mt-2 pt-2 border-t border-gray-200">
                             <span className="text-sm text-gray-600">Subtotal</span>
                             <span className="font-bold text-lg">
-                                ${(item.cantidad * (item.precioUnitario || 0)).toLocaleString('es-CL')}
+                                ${(
+                                    item.cantidad * ((item.precioFinal ?? item.precioTienda ?? item.precioUnitario) || 0)
+                                ).toLocaleString('es-CL')}
                             </span>
                         </div>
                     </div>

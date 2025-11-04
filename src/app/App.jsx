@@ -79,7 +79,7 @@ function App() {
     const itemsNuevosParaCotizacion = [];
     const itemsFallidosParaReporte = []; 
 
-    resultados.forEach((res, index) => {
+  resultados.forEach((res, index) => {
       const itemSolicitadoOriginal = itemsParaBuscar[index]; // El producto que se solicitó
 
       if (res.status === 'fulfilled' && res.value !== null) {
@@ -90,7 +90,12 @@ function App() {
             id: `${producto.id}-PENDIENTE`, 
             sku: producto.id,
             nombre: `${producto.nombreCobol} (Suc. por asignar)`,
-            precioUnitario: producto.precioUnitario,
+            // Precio de tienda desde BD
+            precioTienda: producto.precioUnitario || 0,
+            // Mantener compatibilidad con código existente
+            precioUnitario: producto.precioUnitario || 0,
+            // Precio final editable (inicia igual al de tienda)
+            precioFinal: (producto.precioUnitario || 0),
             cantidad: cantidad,
             sucursal: null,
             originalSolicitadoSku: originalSku
@@ -207,7 +212,12 @@ const handleAgregarProductoDesdeModal = useCallback((producto, cantidad) => {
         id: itemId,
         sku: producto.id,
         nombre: `${producto.nombreCobol} (Suc. ${sucursal.nombreSucursal})`,
-        precioUnitario: producto.precioUnitario,
+        // Precio de tienda desde BD
+        precioTienda: producto.precioUnitario || 0,
+        // Mantener compatibilidad
+        precioUnitario: producto.precioUnitario || 0,
+        // Precio final editable (inicia igual al de tienda)
+        precioFinal: (producto.precioUnitario || 0),
         cantidad: cantidad,
         sucursal: sucursal.nombreSucursal,
         originalSolicitadoSku: skuFinal
@@ -256,6 +266,10 @@ const skusAgregados = useMemo(() =>
   const handleUpdateCantidad = useCallback((itemId, nuevaCantidad) => {
       setItemsCotizacion(prev => prev.map(item => item.id === itemId ? { ...item, cantidad: nuevaCantidad } : item));
   }, []);
+  const handleUpdatePrecioFinal = useCallback((itemId, nuevoPrecio) => {
+    const precioNumber = Number.isFinite(nuevoPrecio) ? nuevoPrecio : 0;
+    setItemsCotizacion(prev => prev.map(item => item.id === itemId ? { ...item, precioFinal: precioNumber } : item));
+  }, []);
 
 
   const handleShowStock = useCallback((producto) => {    
@@ -303,6 +317,7 @@ const skusAgregados = useMemo(() =>
             onRemove={handleQuitarProducto}
             onSave={handleSaveProgress}
             onUpdateCantidad={handleUpdateCantidad}
+            onUpdatePrecioFinal={handleUpdatePrecioFinal}
             onOpenModalGenerarCotizacion={() => setShowModalGenerarCotizacion(true)}
             isMobile={isMobile}
             productAddedToast={productAddedToast}
