@@ -15,6 +15,7 @@ import ModalGenerarCotizacion from './components/ModalGenerarCotizacion';
 import ModalAgregarPorSucursal from './components/ModalAgregarPorSucursal';
 import ModalBuscarProductos from './components/ModalBuscarProductos';
 import ModalReporteAgregado from './components/ModalReporteAgregado';
+import { useResumenCotizacion } from './hooks/useResumenCotizacion';
 
 
 
@@ -42,10 +43,19 @@ function App() {
   const [modalStockDataSucursal, setModalStockDataSucursal] = useState(null);
   const [isBusquedaOpen, setIsBusquedaOpen] = useState(false);
   const [initialSearchTerm, setInitialSearchTerm] = useState('');
-  const [skuSolicitadoActual, setSkuSolicitadoActual] = useState(null); // Para rastrear qué producto se está reemplazando
+  const [skuSolicitadoActual, setSkuSolicitadoActual] = useState(null); 
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
   const [reporteItemsFallidos, setReporteItemsFallidos] = useState([]);
-  const [skuRecienAgregado, setSkuRecienAgregado] = useState(null); // Para destacar el producto en la tabla
+  const [skuRecienAgregado, setSkuRecienAgregado] = useState(null);
+  
+  // Resumen persistente (carga/guardado)
+  const {
+    itemsCotizacion: itemsGuardados,
+    isLoadingResumen,
+    isSavingResumen,
+    guardarResumen,
+    lastSavedAt,
+  } = useResumenCotizacion(idLicitacion);
 
 
 
@@ -58,7 +68,14 @@ function App() {
     productosSolicitados
   ]);
 
-// Función para agregar todas las sugerencias
+  // Cargar items guardados si existen y aún no hemos cargado nada localmente
+  useEffect(() => {
+    if (!isLoadingResumen && itemsCotizacion.length === 0 && (itemsGuardados?.length || 0) > 0) {
+      setItemsCotizacion(itemsGuardados);
+    }
+  }, [isLoadingResumen, itemsGuardados]);
+
+// Función para agregar todas las sugerencias automáticamente con cantidad 0
   const handleAgregarTodasSugerencias = useCallback(async () => {
     setIsLoadingSugerencias(true);
     setReporteItemsFallidos([]); 
@@ -79,25 +96,24 @@ function App() {
     const itemsNuevosParaCotizacion = [];
     const itemsFallidosParaReporte = []; 
 
-  resultados.forEach((res, index) => {
-      const itemSolicitadoOriginal = itemsParaBuscar[index]; // El producto que se solicitó
+    resultados.forEach((res, index) => {
+      const itemSolicitadoOriginal = itemsParaBuscar[index];
 
       if (res.status === 'fulfilled' && res.value !== null) {
         const { producto, cantidad, originalSku } = res.value;
 
         if (producto.stockTotal > 0) {
           itemsNuevosParaCotizacion.push({
-            id: `${producto.id}-PENDIENTE`, 
+            id: `${producto.id}-PENDIENTE`,
             sku: producto.id,
-            nombre: `${producto.nombreCobol} (Suc. por asignar)`,
-            // Precio de tienda desde BD
+            nombre: `${producto.nombreCobol}`,
             precioTienda: producto.precioUnitario || 0,
             precioUnitario: producto.precioUnitario || 0,
-            // Precio final editable 
             precioFinal: (producto.precioUnitario || 0),
-            cantidad: cantidad,
-            sucursal: null,
-            originalSolicitadoSku: originalSku
+            cantidad: 0, // Cantidad inicial en 0
+            sucursal: null, // Sucursal pendiente
+            originalSolicitadoSku: originalSku,
+            cantidadSolicitada: cantidad // Guardar la cantidad solicitada original
           });
         } else {
           itemsFallidosParaReporte.push({
@@ -113,49 +129,30 @@ function App() {
       }
     });
 
-
     if (itemsNuevosParaCotizacion.length > 0) {
       setItemsCotizacion(prevItems => [...prevItems, ...itemsNuevosParaCotizacion]);
       setSugerenciasAgregadas(true); // Activar el botón de limpiar
     }
-    console.log(`Se agregaron ${itemsNuevosParaCotizacion.length} productos.`);
+    
+    console.log(`Se agregaron ${itemsNuevosParaCotizacion.length} productos con cantidad 0.`);
     console.log(`Fallaron ${itemsFallidosParaReporte.length} productos.`);
 
     setReporteItemsFallidos(itemsFallidosParaReporte);
-    setIsReportModalOpen(true);
+    if (itemsFallidosParaReporte.length > 0) {
+      setIsReportModalOpen(true);
+    }
     setIsLoadingSugerencias(false);
 
   }, [productosSolicitados, itemsCotizacion, obtenerSugerencia]);
 
   // Función para limpiar/quitar las sugerencias agregadas automáticamente
   const handleLimpiarSugerencias = useCallback(() => {
-    // Filtra solo los items que tienen -PENDIENTE en su ID
+    // Filtra los items que tienen -PENDIENTE en su ID (agregados automáticamente)
     setItemsCotizacion(prevItems => 
       prevItems.filter(item => !item.id.includes('-PENDIENTE'))
     );
     setSugerenciasAgregadas(false);
   }, []);
-
-
-  // funcion para reasignar sucursal a un item que se agregó con las sugerencias
-  const handleReasignarSucursal = useCallback((itemParaAsignar) => {
-
-    setItemsCotizacion(prev => prev.filter(i => i.id !== itemParaAsignar.id));
-  
-    const productoParaModal = {
-      id: itemParaAsignar.sku,
-      nombreCobol: itemParaAsignar.nombre.replace(' (Suc. por asignar)', ''), 
-      precioUnitario: itemParaAsignar.precioUnitario
-    };
-    
-    setModalStockDataSucursal({
-      producto: productoParaModal,
-      cantidad: itemParaAsignar.cantidad,
-      originalSku: itemParaAsignar.originalSolicitadoSku
-    });
-
-  }, []); 
-
 
   const handleSugerenciaClick = async (itemSolicitado) => {
     setIsLoadingSugerencia(itemSolicitado.sku);
@@ -225,9 +222,14 @@ const handleAgregarProductoDesdeModal = useCallback((producto, cantidad) => {
       };
 
       setItemsCotizacion(prevItems => {
-        // Si estamos en modo reemplazo, eliminar productos anteriores con el mismo SKU solicitado
+        // Si hay itemIdPendiente en modalData, eliminar ese item pendiente
+        const itemPendienteId = modalStockDataSucursal?.itemIdPendiente;
         let itemsFiltrados = prevItems;
-        if (skuSolicitadoActual) {
+        
+        if (itemPendienteId) {
+          // Eliminar item pendiente que se está reemplazando
+          itemsFiltrados = prevItems.filter(item => item.id !== itemPendienteId);
+        } else if (skuSolicitadoActual) {
           itemsFiltrados = prevItems.filter(item => item.originalSolicitadoSku !== skuSolicitadoActual);
         }
         
@@ -242,13 +244,14 @@ const handleAgregarProductoDesdeModal = useCallback((producto, cantidad) => {
         return [...itemsFiltrados, nuevoItem];
       });
 
-      setModalStockDataSucursal(null);
-      setSkuSolicitadoActual(null); // Limpiar el SKU solicitado después de agregar
-      
       // Destacar el producto solicitado 
       setSkuRecienAgregado(skuFinal);
-      setTimeout(() => setSkuRecienAgregado(null), 3000); // quitar efecto de destacado en 3 segundos
-  }, [skuSolicitadoActual]);
+      setTimeout(() => setSkuRecienAgregado(null), 3000);
+      
+      // Cerrar modal y limpiar estados
+      setModalStockDataSucursal(null);
+      setSkuSolicitadoActual(null);
+  }, [skuSolicitadoActual, modalStockDataSucursal]);
 
   // Función para destacar un producto al hacer clic en el sku de referencia
   const handleDestacarProducto = useCallback((sku) => {
@@ -264,9 +267,30 @@ const skusAgregados = useMemo(() =>
   const handleQuitarProducto = useCallback((itemId) => {
       setItemsCotizacion(prev => prev.filter(i => i.id !== itemId));
   }, []);
+  
   const handleUpdateCantidad = useCallback((itemId, nuevaCantidad) => {
-      setItemsCotizacion(prev => prev.map(item => item.id === itemId ? { ...item, cantidad: nuevaCantidad } : item));
-  }, []);
+      const item = itemsCotizacion.find(i => i.id === itemId);
+      
+      // Si el item tiene sucursal pendiente (null) y se incrementa cantidad desde 0
+      if (item && item.sucursal === null && item.cantidad === 0 && nuevaCantidad > 0) {
+        // Abrir modal de sucursales para asignar
+        const productoParaModal = {
+          id: item.sku,
+          nombreCobol: item.nombre,
+          precioUnitario: item.precioTienda || item.precioUnitario
+        };
+        
+        setModalStockDataSucursal({
+          producto: productoParaModal,
+          cantidad: nuevaCantidad,
+          originalSku: item.originalSolicitadoSku,
+          itemIdPendiente: itemId
+        });
+      } else {
+        setItemsCotizacion(prev => prev.map(i => i.id === itemId ? { ...i, cantidad: nuevaCantidad } : i));
+      }
+  }, [itemsCotizacion]);
+  
   const handleUpdatePrecioFinal = useCallback((itemId, nuevoPrecio) => {
     const precioNumber = Number.isFinite(nuevoPrecio) ? nuevoPrecio : 0;
     setItemsCotizacion(prev => prev.map(item => item.id === itemId ? { ...item, precioFinal: precioNumber } : item));
@@ -277,7 +301,11 @@ const skusAgregados = useMemo(() =>
       setModalStockData(producto); 
   }, []);
   const handleCloseStock = useCallback(() => setModalStockData(null), []);
-  const handleSaveProgress = useCallback(() => { /* ... */ }, []);
+  const handleSaveProgress = useCallback(async () => {
+    const ok = await guardarResumen(itemsCotizacion);
+    setToastState(ok ? 'success' : 'error');
+    setTimeout(() => setToastState('idle'), 1500);
+  }, [itemsCotizacion, guardarResumen]);
 
 
   if (loadingTicket || loadingLicitacion) {
@@ -323,7 +351,6 @@ const skusAgregados = useMemo(() =>
             isMobile={isMobile}
             productAddedToast={productAddedToast}
             lastAddedProduct={lastAddedProduct}
-            onReasignarSucursal={handleReasignarSucursal}
             onDestacarProducto={handleDestacarProducto}
           />
         </div>
