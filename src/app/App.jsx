@@ -45,6 +45,7 @@ function App() {
   const [skuSolicitadoActual, setSkuSolicitadoActual] = useState(null); // Para rastrear qué producto se está reemplazando
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
   const [reporteItemsFallidos, setReporteItemsFallidos] = useState([]);
+  const [skuRecienAgregado, setSkuRecienAgregado] = useState(null); // Para destacar el producto en la tabla
 
 
 
@@ -232,7 +233,17 @@ const handleAgregarProductoDesdeModal = useCallback((producto, cantidad) => {
 
       setModalStockDataSucursal(null);
       setSkuSolicitadoActual(null); // Limpiar el SKU solicitado después de agregar
+      
+      // Destacar el producto solicitado 
+      setSkuRecienAgregado(skuFinal);
+      setTimeout(() => setSkuRecienAgregado(null), 3000); // Quitar el destacado después de 3 segundos
   }, [skuSolicitadoActual]);
+
+  // Función para destacar un producto al hacer clic en el sku de referencia
+  const handleDestacarProducto = useCallback((sku) => {
+    setSkuRecienAgregado(sku);
+    setTimeout(() => setSkuRecienAgregado(null), 3000);
+  }, []);
 
 const skusAgregados = useMemo(() => 
     new Set(itemsCotizacion.map(item => item.originalSolicitadoSku)),
@@ -282,6 +293,7 @@ const skusAgregados = useMemo(() =>
             isLoadingSugerencias={isLoadingSugerencias}
             onLimpiarSugerencias={handleLimpiarSugerencias}
             sugerenciasAgregadas={sugerenciasAgregadas}
+            skuRecienAgregado={skuRecienAgregado}
           />
 
 
@@ -296,6 +308,7 @@ const skusAgregados = useMemo(() =>
             productAddedToast={productAddedToast}
             lastAddedProduct={lastAddedProduct}
             onReasignarSucursal={handleReasignarSucursal}
+            onDestacarProducto={handleDestacarProducto}
           />
         </div>
       </main>

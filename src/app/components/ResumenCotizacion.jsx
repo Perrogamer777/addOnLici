@@ -11,7 +11,8 @@ export default function ResumenCotizacion({
     isMobile,
     productAddedToast,
     lastAddedProduct,
-    onReasignarSucursal
+    onReasignarSucursal,
+    onDestacarProducto
 }) {
     const neto = items.reduce((acc, item) => acc + ((item.precioUnitario || 0) * item.cantidad), 0);
     const iva = neto * 0.19;
@@ -63,15 +64,20 @@ export default function ResumenCotizacion({
                         {/* Header del producto */}
                         <div className="flex justify-between items-start mb-2">
                             <div className="flex-1">
-                                {/* Badge de referencia al SKU solicitado */}
+                                {/* Badge de referencia al SKU solicitado - Clickeable */}
                                 {item.originalSolicitadoSku && (
                                     <div className="flex items-center gap-1 mb-1">
                                         <svg className="w-3 h-3 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path>
                                         </svg>
-                                        <span className="text-xs font-medium text-blue-700 bg-blue-100 px-2 py-0.5 rounded-full">
+                                        <button
+                                            type="button"
+                                            onClick={() => onDestacarProducto && onDestacarProducto(item.originalSolicitadoSku)}
+                                            className="text-xs font-medium text-blue-700 bg-blue-100 px-2 py-0.5 rounded-full hover:bg-blue-200 hover:text-blue-900 transition-colors cursor-pointer"
+                                            title="Haz clic para destacar el producto solicitado"
+                                        >
                                             Ref: {item.originalSolicitadoSku}
-                                        </span>
+                                        </button>
                                     </div>
                                 )}
                                 

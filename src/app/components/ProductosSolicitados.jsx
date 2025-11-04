@@ -1,3 +1,5 @@
+import React, { useEffect, useRef } from 'react';
+
 export default function ProductosSolicitados({ 
   items, 
   onSugerenciaClick, 
@@ -7,10 +9,22 @@ export default function ProductosSolicitados({
   onAgregarTodas,
   isLoadingSugerencias,
   onLimpiarSugerencias,
-  sugerenciasAgregadas
+  sugerenciasAgregadas,
+  skuRecienAgregado
 }) {
   
   const isScrollable = items.length > 3;
+  const rowRefs = useRef({}); // Para guardar referencias a cada fila
+
+  // Hacer scroll cuando se destaque un producto
+  useEffect(() => {
+    if (skuRecienAgregado && rowRefs.current[skuRecienAgregado]) {
+      rowRefs.current[skuRecienAgregado].scrollIntoView({
+        behavior: 'smooth',
+        block: 'center',
+      });
+    }
+  }, [skuRecienAgregado]);
 
   const handleBuscarClick = (descripcion, skuSolicitado = null) => {
     // Extrae las primeras palabras como término de búsqueda 
@@ -126,9 +140,18 @@ export default function ProductosSolicitados({
               items.map((item, index) => {
                 
                 const isAgregado = skusAgregados && skusAgregados.has(item.sku);
+                const isRecienAgregado = skuRecienAgregado === item.sku;
 
                 return (
-                  <tr key={`${item.sku}-${index}`} className={`hover:bg-gray-50 transition-colors ${isAgregado ? 'bg-blue-50 border-l-4 border-blue-400' : ''}`}>
+                  <tr 
+                    key={`${item.sku}-${index}`}
+                    ref={(el) => (rowRefs.current[item.sku] = el)}
+                    className={`hover:bg-gray-50 transition-all duration-500 ${
+                      isAgregado ? 'bg-blue-50 border-l-4 border-blue-400' : ''
+                    } ${
+                      isRecienAgregado ? 'animate-pulse bg-green-200 border-l-4 border-green-600' : ''
+                    }`}
+                  >
                     <td className="p-3 text-gray-500">{item.sku}</td>
                     <td className="p-3 font-medium text-gray-800">{item.descripcion}</td>
                     <td className="p-3 text-gray-500">{item.categoria}</td>
