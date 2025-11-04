@@ -196,7 +196,7 @@ export default function ProductosSolicitados({
                           </button>
 
                           <button 
-                            onClick={() => handleBuscarClick(item.descripcion)} 
+                            onClick={() => handleBuscarClick(item.descripcion, item.sku)} 
                             className="px-2 py-1 bg-green-500 text-white text-xs font-semibold rounded hover:bg-green-600"
                           >
                             Buscar producto

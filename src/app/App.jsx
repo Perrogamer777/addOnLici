@@ -21,7 +21,7 @@ import ModalReporteAgregado from './components/ModalReporteAgregado';
 function App() {
   const client = useClient();
 
-  // (Estados de Licitación y Productos Solicitados - Sin cambios)
+  // Estados de Licitación y Productos Solicitados
   const { idLicitacion, loading: loadingTicket, error: errorTicket } = useTicketIdFromZendesk();
   const { data: licitacionData, loading: loadingLicitacion, error: errorLicitacion } = useLicitacionData(idLicitacion);
   const { productos: productosSolicitados, loading: loadingProductos, error: errorProductos } = useProductosSoli(idLicitacion);
@@ -31,7 +31,7 @@ function App() {
   const [sugerenciasAgregadas, setSugerenciasAgregadas] = useState(false);
 
 
-  // (Estados de UI y Cotización - Sin cambios)
+  // Estados de UI y Cotización
   const [itemsCotizacion, setItemsCotizacion] = useState([]);
   const [modalStockData, setModalStockData] = useState(null);
   const [toastState, setToastState] = useState('idle');
@@ -92,9 +92,8 @@ function App() {
             nombre: `${producto.nombreCobol} (Suc. por asignar)`,
             // Precio de tienda desde BD
             precioTienda: producto.precioUnitario || 0,
-            // Mantener compatibilidad con código existente
             precioUnitario: producto.precioUnitario || 0,
-            // Precio final editable (inicia igual al de tienda)
+            // Precio final editable 
             precioFinal: (producto.precioUnitario || 0),
             cantidad: cantidad,
             sucursal: null,
@@ -130,7 +129,7 @@ function App() {
 
   // Función para limpiar/quitar las sugerencias agregadas automáticamente
   const handleLimpiarSugerencias = useCallback(() => {
-    // Filtra solo los items que tienen -PENDIENTE en su ID (agregados automáticamente)
+    // Filtra solo los items que tienen -PENDIENTE en su ID
     setItemsCotizacion(prevItems => 
       prevItems.filter(item => !item.id.includes('-PENDIENTE'))
     );
@@ -166,14 +165,15 @@ function App() {
       if (resultado) {
         setModalStockDataSucursal(resultado);
       } else {
-        handleBuscarProductoClick(itemSolicitado.descripcion);
+        // Si no hay sugerencia, abrir búsqueda vinculada al SKU solicitado
+        handleBuscarProductoClick(itemSolicitado.descripcion, itemSolicitado.sku);
       }
 
     } catch (error) {
       console.error("Fallo al obtener sugerencia:", error);
-      handleBuscarProductoClick(itemSolicitado.descripcion);
+      handleBuscarProductoClick(itemSolicitado.descripcion, itemSolicitado.sku);
     } finally {
-      setIsLoadingSugerencia(null); // Detiene la carga
+      setIsLoadingSugerencia(null); 
     }
   };
 
@@ -197,7 +197,8 @@ const handleAgregarProductoDesdeModal = useCallback((producto, cantidad) => {
         precioUnitario: producto.precioUnitario || 0, 
     };
 
-    setModalStockDataSucursal({ producto: productoParaModalSucursal, cantidad });
+  // se incluye el SKU solicitado actual para mantener la referencia
+  setModalStockDataSucursal({ producto: productoParaModalSucursal, cantidad, originalSku: skuSolicitadoActual });
     setIsBusquedaOpen(false); 
   }, []);
 
@@ -205,7 +206,7 @@ const handleAgregarProductoDesdeModal = useCallback((producto, cantidad) => {
   const handleAgregarDesdeSucursal = useCallback((producto, sucursal, cantidad, originalSku) => { 
       const itemId = `${producto.id}-${sucursal.nombreSucursal}`;
       
-      // Usar el SKU solicitado actual si existe (modo reemplazo), sino usar el originalSku
+      // usar el originalSku
       const skuFinal = skuSolicitadoActual || originalSku;
       
       const nuevoItem = {
@@ -246,7 +247,7 @@ const handleAgregarProductoDesdeModal = useCallback((producto, cantidad) => {
       
       // Destacar el producto solicitado 
       setSkuRecienAgregado(skuFinal);
-      setTimeout(() => setSkuRecienAgregado(null), 3000); // Quitar el destacado después de 3 segundos
+      setTimeout(() => setSkuRecienAgregado(null), 3000); // quitar efecto de destacado en 3 segundos
   }, [skuSolicitadoActual]);
 
   // Función para destacar un producto al hacer clic en el sku de referencia
