@@ -67,14 +67,12 @@ export default function ResumenCotizacion({
 
     const handleEliminarTodos = () => {
         if (items.length === 0) return;
-        // Paso 1: pedir confirmación inline (sin window.confirm)
         if (!confirmarEliminarTodos) {
             setConfirmarEliminarTodos(true);
             // Autocancelar confirmación después de 4s
             setTimeout(() => setConfirmarEliminarTodos(false), 4000);
             return;
         }
-        // Paso 2: confirmado, eliminar
         if (onRemoveAll) onRemoveAll();
         setConfirmarEliminarTodos(false);
     };
@@ -95,7 +93,7 @@ export default function ResumenCotizacion({
                         title="Generar PDF"
                     >
                         <PDFIcon />
-                        PDF
+                        Exportar a PDF
                     </button>
 
                     {/* Botón Eliminar Todos */}
