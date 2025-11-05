@@ -1,6 +1,12 @@
 import React, { useState } from 'react';
+import { generarPdf } from '../services/generarPdf';
 
 const TrashIcon = () => <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>;
+const PDFIcon = () => (
+    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+    </svg>
+);
 
 export default function ResumenCotizacion({ 
     items = [], 
@@ -13,17 +19,20 @@ export default function ResumenCotizacion({
     productAddedToast,
     lastAddedProduct,
     onReasignarSucursal,
-    onDestacarProducto
+    onDestacarProducto,
+    infoLicitacion,
+    onRemoveAll
 }) {
-    const [saveState, setSaveState] = useState('idle'); // idle | saving | success | error
+    const [saveState, setSaveState] = useState('idle'); 
+    const [confirmarEliminarTodos, setConfirmarEliminarTodos] = useState(false);
     
-    // Calcular neto usando precioFinal si está definido; si no, usar precio de tienda o unitario
+    // Calcular neto usando precioFinal si está definido, si no, usar precio de tienda
     const neto = items.reduce((acc, item) => {
         const unit = (item.precioFinal ?? item.precioTienda ?? item.precioUnitario ?? 0);
         return acc + unit * item.cantidad;
     }, 0);
-    const iva = neto * 0.19;
-    const total = neto + iva;
+    const total = neto * 1.19;
+    const iva = total - neto;
 
     const handleCantidadChange = (itemId, nuevaCantidad) => {
         if (nuevaCantidad <= 0) {
@@ -41,12 +50,82 @@ export default function ResumenCotizacion({
         onOpenModalGenerarCotizacion();
     };
 
+    const handleGenerarPDF = () => {
+        if (items.length === 0) {
+            alert('Agrega al menos un producto para generar el PDF');
+            return;
+        }
+        
+        const totales = { neto, iva, total };
+        const doc = generarPdf.generarCotizacion(items, infoLicitacion, totales);
+        
+        // Descargar directamente
+        const nombreArchivo = `cotizacion_${infoLicitacion?.idLicitacion || 'sin-id'}_${Date.now()}.pdf`;
+        generarPdf.descargarPDF(doc, nombreArchivo);
+        
+    };
+
+    const handleEliminarTodos = () => {
+        if (items.length === 0) return;
+        // Paso 1: pedir confirmación inline (sin window.confirm)
+        if (!confirmarEliminarTodos) {
+            setConfirmarEliminarTodos(true);
+            // Autocancelar confirmación después de 4s
+            setTimeout(() => setConfirmarEliminarTodos(false), 4000);
+            return;
+        }
+        // Paso 2: confirmado, eliminar
+        if (onRemoveAll) onRemoveAll();
+        setConfirmarEliminarTodos(false);
+    };
+
     return (
         <aside className="bg-white p-4 rounded-lg shadow-sm border border-gray-200 flex flex-col">
             <div className="flex justify-between items-center mb-3">
                 <div className="flex items-center gap-2">
                     <h3 className="text-lg font-semibold">Resumen de Cotización</h3>
                 </div>
+
+                <div className="flex gap-2">
+                 {/* Botón Generar PDF */}
+                    <button
+                        type="button"
+                        onClick={handleGenerarPDF}
+                        className="px-3 py-1 text-xs font-semibold rounded transition-colors flex items-center gap-2 bg-red-500 text-white hover:bg-red-600"
+                        title="Generar PDF"
+                    >
+                        <PDFIcon />
+                        PDF
+                    </button>
+
+                    {/* Botón Eliminar Todos */}
+                                        {items.length > 0 && (
+                                                <div className="flex items-center gap-2">
+                                                    <button
+                                                        type="button"
+                                                        onClick={handleEliminarTodos}
+                                                        className={`px-3 py-1 text-xs font-semibold rounded transition-colors flex items-center gap-2 ${
+                                                            confirmarEliminarTodos ? 'bg-red-700 hover:bg-red-800' : 'bg-red-600 hover:bg-red-700'
+                                                        } text-white`}
+                                                        title={confirmarEliminarTodos ? 'Haz clic para confirmar' : 'Eliminar todos los productos'}
+                                                    >
+                                                        <TrashIcon />
+                                                        {confirmarEliminarTodos ? 'Confirmar eliminar' : 'Eliminar todos'}
+                                                    </button>
+                                                    {confirmarEliminarTodos && (
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => setConfirmarEliminarTodos(false)}
+                                                            className="px-2 py-1 text-xs font-semibold rounded border border-gray-300 text-gray-700 hover:bg-gray-100"
+                                                        >
+                                                            Cancelar
+                                                        </button>
+                                                    )}
+                                                </div>
+                                        )}
+           
+                </div>
+
                 <button
                     type="button"
                     onClick={async () => {
@@ -149,8 +228,6 @@ export default function ResumenCotizacion({
                                 </button>
                                 
                                 <input
-                                    type="number"
-                                    min="1"
                                     value={item.cantidad}
                                     onChange={(e) => handleCantidadChange(item.id, parseInt(e.target.value) || 1)}
                                     className="w-12 text-center border border-gray-300 rounded px-2 py-1 text-sm"
@@ -182,9 +259,6 @@ export default function ResumenCotizacion({
                                 <div className="text-right w-32">
                                     <label className="block text-[12px] text-gray-500 leading-none mb-1">Precio final</label>
                                     <input
-                                        type="number"
-                                        min="0"
-                                        step="1"
                                         value={Number(item.precioFinal ?? item.precioTienda ?? item.precioUnitario ?? 0)}
                                         onChange={(e) => {
                                             const val = parseInt(e.target.value, 10);

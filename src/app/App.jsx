@@ -264,6 +264,10 @@ const skusAgregados = useMemo(() =>
   const handleQuitarProducto = useCallback((itemId) => {
       setItemsCotizacion(prev => prev.filter(i => i.id !== itemId));
   }, []);
+
+  const handleQuitarTodosProductos = useCallback(() => {
+      setItemsCotizacion([]);
+  }, []);
   
   const handleUpdateCantidad = useCallback((itemId, nuevaCantidad) => {
       const item = itemsCotizacion.find(i => i.id === itemId);
@@ -299,9 +303,16 @@ const skusAgregados = useMemo(() =>
   }, []);
   const handleCloseStock = useCallback(() => setModalStockData(null), []);
   const handleSaveProgress = useCallback(async () => {
-    const ok = await guardarResumen(itemsCotizacion);
-    setToastState(ok ? 'success' : 'error');
-    setTimeout(() => setToastState('idle'), 1500);
+      try {
+      const ok = await guardarResumen(itemsCotizacion);
+      setToastState(ok ? 'success' : 'error');
+      setTimeout(() => setToastState('idle'), 1500);
+      return ok; 
+    } catch (e) {
+      setToastState('error');
+      setTimeout(() => setToastState('idle'), 1500);
+      return false;
+    }
   }, [itemsCotizacion, guardarResumen]);
 
 
@@ -341,6 +352,7 @@ const skusAgregados = useMemo(() =>
           <ResumenCotizacion
             items={itemsCotizacion}
             onRemove={handleQuitarProducto}
+            onRemoveAll={handleQuitarTodosProductos}
             onSave={handleSaveProgress}
             onUpdateCantidad={handleUpdateCantidad}
             onUpdatePrecioFinal={handleUpdatePrecioFinal}
@@ -349,6 +361,7 @@ const skusAgregados = useMemo(() =>
             productAddedToast={productAddedToast}
             lastAddedProduct={lastAddedProduct}
             onDestacarProducto={handleDestacarProducto}
+            infoLicitacion={licitacionData}
           />
         </div>
       </main>
