@@ -44,7 +44,6 @@ function App() {
   const [isBusquedaOpen, setIsBusquedaOpen] = useState(false);
   const [initialSearchTerm, setInitialSearchTerm] = useState('');
   const [skuSolicitadoActual, setSkuSolicitadoActual] = useState(null); 
-  const [nombreProductoOrigen, setNombreProductoOrigen] = useState('');
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
   const [reporteItemsFallidos, setReporteItemsFallidos] = useState([]);
   const [skuRecienAgregado, setSkuRecienAgregado] = useState(null);
@@ -164,23 +163,21 @@ function App() {
         setModalStockDataSucursal(resultado);
       } else {
         // Si no hay sugerencia, abrir búsqueda vinculada al SKU solicitado
-        handleBuscarProductoClick(itemSolicitado.descripcion, itemSolicitado.sku, itemSolicitado.descripcion);
+        handleBuscarProductoClick(itemSolicitado.descripcion, itemSolicitado.sku);
       }
 
     } catch (error) {
-  console.error("Fallo al obtener sugerencia:", error);
-  handleBuscarProductoClick(itemSolicitado.descripcion, itemSolicitado.sku, itemSolicitado.descripcion);
+      console.error("Fallo al obtener sugerencia:", error);
+      handleBuscarProductoClick(itemSolicitado.descripcion, itemSolicitado.sku);
     } finally {
       setIsLoadingSugerencia(null); 
     }
   };
 
-  const handleBuscarProductoClick = useCallback((terminoBusqueda, skuSolicitado = null, nombreOrigen = null) => {
+  const handleBuscarProductoClick = useCallback((terminoBusqueda, skuSolicitado = null) => {
     console.log("Buscar producto clickeado con término:", terminoBusqueda); 
     setInitialSearchTerm(terminoBusqueda); 
     setSkuSolicitadoActual(skuSolicitado); // Guardar el SKU solicitado si se está reemplazando
-    // Guardar el nombre/descripción del producto desde el cual se abrió el modal
-    setNombreProductoOrigen(nombreOrigen || terminoBusqueda || '');
     setIsBusquedaOpen(true); 
   }, []); 
 
@@ -305,16 +302,9 @@ const skusAgregados = useMemo(() =>
   }, []);
   const handleCloseStock = useCallback(() => setModalStockData(null), []);
   const handleSaveProgress = useCallback(async () => {
-    try {
-      const ok = await guardarResumen(itemsCotizacion);
-      if (ok) {
-        setToastState('visible');
-        setTimeout(() => setToastState('idle'), 1800);
-      }
-      return ok; // Importante: devolver resultado para que el botón muestre feedback
-    } catch (_) {
-      return false;
-    }
+    const ok = await guardarResumen(itemsCotizacion);
+    setToastState(ok ? 'success' : 'error');
+    setTimeout(() => setToastState('idle'), 1500);
   }, [itemsCotizacion, guardarResumen]);
 
 
@@ -383,8 +373,6 @@ const skusAgregados = useMemo(() =>
         onClose={() => setIsBusquedaOpen(false)}
         onProductoSeleccionado={handleAgregarProductoDesdeModal} 
         onStockClick={handleShowStock} 
-        initialSearchTerm={initialSearchTerm}
-        nombreProductoOrigen={nombreProductoOrigen}
       />
       {/* Modal de Reporte de Agregado Automático */}
       <ModalReporteAgregado

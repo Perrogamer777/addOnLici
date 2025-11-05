@@ -22,7 +22,7 @@ export const useResumenCotizacion = (idLicitacion) => {
     if (!client || !idLicitacion) return;
 
     const cargarResumenGuardado = async () => {
-      console.log(`Cargando resumen guardado para id licitación:  ${idLicitacion}`);
+      console.log(`[Hook] Cargando resumen guardado para ${idLicitacion}...`);
       setIsLoading(true);
       setError(null);
       const controller = new AbortController();
@@ -42,23 +42,23 @@ export const useResumenCotizacion = (idLicitacion) => {
             if (Array.isArray(parsed)) {
               itemsGuardados = parsed;
             } else {
-              console.warn('itemsJson no es un array, se ignorará.');
+              console.warn('[Hook] itemsJson no es un array, se ignorará.');
             }
           } catch (e) {
-            console.error('Error parseando itemsJson:', e);
+            console.error('[Hook] Error parseando itemsJson:', e);
           }
 
           if (itemsGuardados.length > 0) {
             setItems(itemsGuardados);
-            console.log('Resumen cargado exitosamente.', itemsGuardados);
+            console.log('[Hook] Resumen cargado exitosamente.', itemsGuardados);
           }
         }
       } catch (err) {
         if (err?.status === 404) {
-          console.log('No se encontró un resumen guardado.');
+          console.log('[Hook] No se encontró un resumen guardado.');
           setItems([]);
         } else {
-          console.error('Error al cargar el resumen:', err);
+          console.error('[Hook] Error al cargar el resumen:', err);
           setError(err?.message || 'Error cargando resumen');
         }
       } finally {
@@ -77,7 +77,7 @@ export const useResumenCotizacion = (idLicitacion) => {
       return false;
     }
 
-    console.log("Guardando progreso...");
+    console.log("[Hook] Guardando progreso...");
     setIsSaving(true);
     setError(null);
 

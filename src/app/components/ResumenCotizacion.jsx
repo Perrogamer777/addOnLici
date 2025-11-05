@@ -16,6 +16,7 @@ export default function ResumenCotizacion({
     onDestacarProducto
 }) {
     const [saveState, setSaveState] = useState('idle'); // idle | saving | success | error
+    
     // Calcular neto usando precioFinal si está definido; si no, usar precio de tienda o unitario
     const neto = items.reduce((acc, item) => {
         const unit = (item.precioFinal ?? item.precioTienda ?? item.precioUnitario ?? 0);

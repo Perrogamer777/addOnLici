@@ -11,14 +11,13 @@ export default function ModalBusquedaProductos({
   onClose,
   onProductoSeleccionado,
   initialSearchTerm,
-  onStockClick,
-  nombreProductoOrigen
+  onStockClick 
 }) {
 
   // estados del modal 
   const [currentPage, setCurrentPage] = useState(1);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [submittedSearchTerm, setSubmittedSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useState(initialSearchTerm || '');
+  const [submittedSearchTerm, setSubmittedSearchTerm] = useState(initialSearchTerm || '');
   const [selectedRubro, setSelectedRubro] = useState('');
   const [selectedLinea, setSelectedLinea] = useState('');
   const [selectedFamilia, setSelectedFamilia] = useState('');
@@ -88,14 +87,17 @@ export default function ModalBusquedaProductos({
   }
 
 
-  useEffect(() => {
+    useEffect(() => {
+   
     if (isOpen) {
-      setSearchTerm('');
-      setSubmittedSearchTerm('');
+      const initialUpper = initialSearchTerm?.toUpperCase() || '';
+      setSearchTerm(initialUpper);
+      setSubmittedSearchTerm(initialUpper); 
       setCurrentPage(1);
       setSoloConStock(true);
+    
     }
-  }, [isOpen]);
+  }, [initialSearchTerm, isOpen]);
 
   if (!isOpen) return null;
 
@@ -110,15 +112,8 @@ export default function ModalBusquedaProductos({
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header del Modal */}
-        <div className="flex justify-between items-center mb-2 pb-3 border-b">
-          <div className="flex flex-col gap-1">
-            <h3 className="text-xl font-semibold text-gray-800">Búsqueda de Productos</h3>
-            {nombreProductoOrigen && (
-              <div className="text-m text-gray-600">
-                Para: <span className="font-medium text-gray-800">{nombreProductoOrigen}</span>
-              </div>
-            )}
-          </div>
+        <div className="flex justify-between items-center mb-4 pb-4 border-b">
+          <h3 className="text-xl font-semibold text-gray-800">Búsqueda de Productos</h3>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
           </button>
