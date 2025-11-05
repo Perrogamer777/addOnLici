@@ -104,7 +104,7 @@ function App() {
 
         if (producto.stockTotal > 0) {
           itemsNuevosParaCotizacion.push({
-            id: `${producto.id}-PENDIENTE`,
+            id: `${producto.id}-PENDIENTE-${Date.now()}-${index}`,
             sku: producto.id,
             nombre: `${producto.nombreCobol}`,
             precioTienda: producto.precioUnitario || 0,
@@ -113,7 +113,8 @@ function App() {
             cantidad: 0, // Cantidad inicial en 0
             sucursal: null, // Sucursal pendiente
             originalSolicitadoSku: originalSku,
-            cantidadSolicitada: cantidad // Guardar la cantidad solicitada original
+            cantidadSolicitada: cantidad, // Guardar la cantidad solicitada original
+            esAgregadoMasivo: true // para identificar sugerencias agregadas masivamente
           });
         } else {
           itemsFallidosParaReporte.push({
@@ -145,11 +146,10 @@ function App() {
 
   }, [productosSolicitados, itemsCotizacion, obtenerSugerencia]);
 
-  // Función para limpiar/quitar las sugerencias agregadas automáticamente
   const handleLimpiarSugerencias = useCallback(() => {
-    // Filtra los items que tienen -PENDIENTE en su ID (agregados automáticamente)
+    // filtra los items que fueron agregados masivamente 
     setItemsCotizacion(prevItems => 
-      prevItems.filter(item => !item.id.includes('-PENDIENTE'))
+      prevItems.filter(item => !item.esAgregadoMasivo)
     );
     setSugerenciasAgregadas(false);
   }, []);
@@ -201,7 +201,7 @@ const handleAgregarProductoDesdeModal = useCallback((producto, cantidad) => {
 
 
   const handleAgregarDesdeSucursal = useCallback((producto, sucursal, cantidad, originalSku) => { 
-      const itemId = `${producto.id}-${sucursal.nombreSucursal}`;
+      const itemId = `${producto.id}-${sucursal.nombreSucursal}-${Date.now()}`;
       
       // usar el originalSku
       const skuFinal = skuSolicitadoActual || originalSku;
@@ -228,19 +228,16 @@ const handleAgregarProductoDesdeModal = useCallback((producto, cantidad) => {
         
         if (itemPendienteId) {
           // Eliminar item pendiente que se está reemplazando
+          // preservar la marca esAgregadoMasivo si existía
+          const itemOriginal = prevItems.find(item => item.id === itemPendienteId);
+          if (itemOriginal?.esAgregadoMasivo) {
+            nuevoItem.esAgregadoMasivo = true; 
+          }
           itemsFiltrados = prevItems.filter(item => item.id !== itemPendienteId);
         } else if (skuSolicitadoActual) {
           itemsFiltrados = prevItems.filter(item => item.originalSolicitadoSku !== skuSolicitadoActual);
         }
         
-        const itemExistente = itemsFiltrados.find(item => item.id === itemId);
-        if (itemExistente) {
-          return itemsFiltrados.map(item =>
-            item.id === itemId
-              ? { ...item, cantidad: item.cantidad + cantidad } 
-              : item
-          );
-        }
         return [...itemsFiltrados, nuevoItem];
       });
 
