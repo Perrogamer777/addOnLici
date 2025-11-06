@@ -33,7 +33,8 @@ export default function ResumenCotizacion({
     onReasignarSucursal,
     onDestacarProducto,
     infoLicitacion,
-    onRemoveAll
+    onRemoveAll,
+    onOpenStockModal
 }) {
     const [saveState, setSaveState] = useState('idle'); 
     const [confirmarEliminarTodos, setConfirmarEliminarTodos] = useState(false);
@@ -228,6 +229,21 @@ export default function ResumenCotizacion({
                                 <p className="text-xs text-gray-500 mt-1">
                                     SKU: {item.sku} • Cantidad: {item.cantidad}
                                 </p>
+                                
+                                {/* Mostrar desglose de sucursales si existe */}
+                                {item.detallesSucursales && item.detallesSucursales.length > 0 && (
+                                    <div className="mt-2 flex flex-wrap gap-1">
+                                        {item.detallesSucursales.map((detalle, idx) => (
+                                            <span 
+                                                key={idx}
+                                                className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full"
+                                                title={`${detalle.cantidad} unidades desde ${detalle.nombreSucursal}`}
+                                            >
+                                                {detalle.nombreSucursal}: {detalle.cantidad}
+                                            </span>
+                                        ))}
+                                    </div>
+                                )}
                             </div>
                             
                             <button 
@@ -259,7 +275,18 @@ export default function ResumenCotizacion({
                                 
                                 <button
                                     type="button"
-                                    onClick={() => handleCantidadChange(item.id, item.cantidad + 1)}
+                                    onClick={() => {
+                                        // Abrir modal de stock para agregar desde sucursales
+                                        if (onOpenStockModal) {
+                                            // Limpiar el nombre del producto si tiene 
+                                            const nombreLimpio = item.nombre.replace(/\s*\(Suc\.\s+[^)]+\)\s*$/, '');
+                                            onOpenStockModal({
+                                                id: item.sku,
+                                                nombreCobol: nombreLimpio,
+                                                precioUnitario: item.precioTienda || item.precioUnitario
+                                            });
+                                        }
+                                    }}
                                     className="w-8 h-8 rounded-full border border-gray-300 flex items-center justify-center hover:bg-gray-100 text-lg font-bold"
                                 >
                                     +
