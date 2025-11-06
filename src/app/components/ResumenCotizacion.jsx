@@ -208,7 +208,7 @@ export default function ResumenCotizacion({
                             <div className="flex-1">
                                 {/* Badge de referencia al SKU solicitado */}
                                 {item.originalSolicitadoSku && (
-                                    <div className="flex items-center gap-1 mb-1">
+                                    <div className="flex items-center gap-1 mb-1 flex-wrap">
                                         <svg className="w-3 h-3 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path>
                                         </svg>
@@ -219,6 +219,27 @@ export default function ResumenCotizacion({
                                             title="Haz clic para destacar el producto solicitado"
                                         >
                                             Ref: {item.originalSolicitadoSku}
+                                        </button>
+                                        {item.originalSolicitadoNombre && (
+                                            <span className="text-xs font-medium text-green-700 bg-green-100 px-2 py-0.5 rounded-full">
+                                                {item.originalSolicitadoNombre}
+                                            </span>
+                                        )}
+                                    </div>
+                                )}
+
+                                {item.descripcion && (
+                                    <div className="flex items-center gap-1 mb-1">
+                                        <svg className="w-3 h-3 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path>
+                                        </svg>
+                                        <button
+                                            type="button"
+                                            onClick={() => onDestacarProducto && onDestacarProducto(item.descripcion)}
+                                            className="text-xs font-medium text-blue-700 bg-blue-100 px-2 py-0.5 rounded-full hover:bg-blue-200 hover:text-blue-900 transition-colors cursor-pointer"
+                                            title="Haz clic para destacar el producto solicitado"
+                                        >
+                                            Ref: {item.descripcion}
                                         </button>
                                     </div>
                                 )}

@@ -156,13 +156,11 @@ export default function StockModal({ producto, onClose, onAgregarDesdeMultiplesS
                           </button>
                           
                           <input
-                            type="number"
                             value={cantidadSeleccionada}
                             onChange={(e) => {
                               const val = parseInt(e.target.value) || 0;
                               handleCantidadChange(sucursal.nombreSucursal, val, stockDisponible);
                             }}
-                            min="0"
                             max={stockDisponible}
                             className={`w-16 text-center border rounded px-2 py-1 text-sm ${
                               cantidadSeleccionada >= stockDisponible && stockDisponible > 0

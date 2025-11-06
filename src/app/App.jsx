@@ -75,6 +75,15 @@ function App() {
     }
   }, [isLoadingResumen, itemsGuardados]);
 
+  // Crear mapa de SKU y descripción de productos solicitados
+  const mapaProductosSolicitados = useMemo(() => {
+    const mapa = new Map();
+    productosSolicitados.forEach(producto => {
+      mapa.set(producto.sku, producto.descripcion);
+    });
+    return mapa;
+  }, [productosSolicitados]);
+
 // Función para agregar todas las sugerencias automáticamente con cantidad 0
   const handleAgregarTodasSugerencias = useCallback(async () => {
     setIsLoadingSugerencias(true);
@@ -113,6 +122,7 @@ function App() {
             cantidad: 0, // Cantidad inicial en 0
             sucursal: null, // Sucursal pendiente
             originalSolicitadoSku: originalSku,
+            originalSolicitadoNombre: mapaProductosSolicitados.get(originalSku) || null,
             cantidadSolicitada: cantidad, // Guardar la cantidad solicitada original
             esAgregadoMasivo: true // para identificar sugerencias agregadas masivamente
           });
@@ -218,7 +228,8 @@ const handleAgregarProductoDesdeModal = useCallback((producto, cantidad) => {
         precioFinal: (producto.precioUnitario || 0),
         cantidad: cantidad,
         sucursal: sucursal.nombreSucursal,
-        originalSolicitadoSku: skuFinal
+        originalSolicitadoSku: skuFinal,
+        originalSolicitadoNombre: mapaProductosSolicitados.get(skuFinal) || null
       };
 
       setItemsCotizacion(prevItems => {
@@ -259,7 +270,7 @@ const handleAgregarProductoDesdeModal = useCallback((producto, cantidad) => {
       // Cerrar modal y limpiar estados
       setModalStockDataSucursal(null);
       setSkuSolicitadoActual(null);
-  }, [skuSolicitadoActual, modalStockDataSucursal]);
+  }, [skuSolicitadoActual, modalStockDataSucursal, mapaProductosSolicitados]);
 
   // Nueva función para agregar desde múltiples sucursales
   const handleAgregarDesdeMultiplesSucursales = useCallback((producto, sucursalesSeleccionadas) => {
@@ -341,7 +352,8 @@ const handleAgregarProductoDesdeModal = useCallback((producto, cantidad) => {
           precioFinal: (producto.precioUnitario || 0),
           cantidad: cantidadTotal,
           detallesSucursales: detallesSucursales,
-          originalSolicitadoSku: producto.originalSolicitadoSku || null
+          originalSolicitadoSku: producto.originalSolicitadoSku || null,
+          originalSolicitadoNombre: producto.originalSolicitadoSku ? mapaProductosSolicitados.get(producto.originalSolicitadoSku) || null : null
         };
         
         return [...prevItems, nuevoItem];
@@ -350,7 +362,7 @@ const handleAgregarProductoDesdeModal = useCallback((producto, cantidad) => {
 
     // Cerrar modal
     setModalStockData(null);
-  }, []);
+  }, [mapaProductosSolicitados]);
 
   // Función para destacar un producto al hacer clic en el sku de referencia
   const handleDestacarProducto = useCallback((sku) => {

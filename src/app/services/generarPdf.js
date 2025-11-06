@@ -50,16 +50,42 @@ export class generarPdf {
     }
     
     // Tabla de productos
-    const tableData = items.map((item, index) => [
-      index + 1,
-      item.sku,
-      item.nombre,
-      item.marca || '-',
-      item.cantidad,
-      `$${((item.precioTienda ?? item.precioUnitario) || 0).toLocaleString('es-CL')}`,
-      `$${((item.precioFinal ?? item.precioTienda ?? item.precioUnitario) || 0).toLocaleString('es-CL')}`,
-      `$${(item.cantidad * ((item.precioFinal ?? item.precioTienda ?? item.precioUnitario) || 0)).toLocaleString('es-CL')}`
-    ]);
+    const tableData = items.map((item, index) => {
+      // Construir desglose de sucursales si existe
+      let sucursales = '-';
+      // Limpiar nombre si ya contiene (Suc. XYZ) porque ahora mostramos una columna dedicada
+      let nombreProducto = item.nombre || '';
+      const tieneInfoSucursales = (Array.isArray(item.detallesSucursales) && item.detallesSucursales.length > 0) || !!item.sucursal;
+      if (tieneInfoSucursales) {
+        nombreProducto = nombreProducto.replace(/\s*\(Suc\.\s+[^)]+\)\s*$/i, '').trim();
+      }
+      if (Array.isArray(item.detallesSucursales) && item.detallesSucursales.length > 0) {
+        sucursales = item.detallesSucursales
+          .map(d => `${d.nombreSucursal}: ${d.cantidad}`)
+          .join(' | ');
+      } else if (item.sucursal) {
+        // Compatibilidad hacia atrás (items antiguos con una sola sucursal)
+        sucursales = `${item.sucursal}: ${item.cantidad}`;
+      } else {
+        // Si el nombre ya incluye (Suc. XXX), lo dejamos visible en nombre
+        sucursales = '-';
+      }
+
+      const precioTienda = (item.precioTienda ?? item.precioUnitario) || 0;
+      const precioFinal = (item.precioFinal ?? item.precioTienda ?? item.precioUnitario) || 0;
+      const subtotal = item.cantidad * precioFinal;
+
+      return [
+        (index + 1).toString(),  
+        item.sku || '',
+        nombreProducto,
+        sucursales,
+        item.cantidad || 0,
+        `$${precioTienda.toLocaleString('es-CL')}`,
+        `$${precioFinal.toLocaleString('es-CL')}`,
+        `$${subtotal.toLocaleString('es-CL')}`
+      ];
+    });
     
     // Header y footer en cada página (barra superior y número de página)
     const drawHeaderFooter = (data) => {
@@ -95,7 +121,7 @@ export class generarPdf {
 
     autoTable(doc, {
       startY: yPos,
-      head: [['#', 'SKU', 'Producto', 'Marca', 'Cant.', 'Precio Tienda', 'Precio Final', 'Subtotal']],
+      head: [['#', 'SKU', 'Producto', 'Sucursales', 'Cant.', 'Precio Tienda', 'Precio Final', 'Subtotal']],
       body: tableData,
       theme: 'striped',
       margin: { top: headerHeight + 8, right: margin, bottom: 20, left: margin },
@@ -107,23 +133,25 @@ export class generarPdf {
         lineColor: [0, 102, 204],
         lineWidth: 0.2
       },
+      alternateRowStyles: { fillColor: [245, 248, 255] },
       styles: {
         fontSize: 9,
-        cellPadding: 3,
+        cellPadding: { top: 4, right: 3, bottom: 4, left: 3 }, // Más padding vertical
         overflow: 'linebreak',
         lineColor: [230, 230, 230],
-        lineWidth: 0.1
+        lineWidth: 0.1,
+        valign: 'middle',
+        minCellHeight: 12 // Altura mínima de celda para evitar superposición
       },
-      alternateRowStyles: { fillColor: [245, 248, 255] },
       columnStyles: {
-        0: { cellWidth: 10, halign: 'center' },   
-        1: { cellWidth: 20 },                    
-        2: { cellWidth: 46 },                      
-        3: { cellWidth: 18 },                      
-        4: { cellWidth: 14, halign: 'center' },    
-        5: { cellWidth: 22, halign: 'right' },     
-        6: { cellWidth: 22, halign: 'right' },     
-        7: { cellWidth: 30, halign: 'right' }      
+        0: { cellWidth: 12, halign: 'center' },     // # - Aumentado para evitar superposición
+        1: { cellWidth: 18 },                       // SKU
+        2: { cellWidth: 45 },                       // Producto - Reducido ligeramente
+        3: { cellWidth: 26, halign: 'left' },       // Sucursales - Reducido ligeramente
+        4: { cellWidth: 12, halign: 'center' },     // Cant.
+        5: { cellWidth: 23, halign: 'right' },      // Precio Tienda - Reducido ligeramente
+        6: { cellWidth: 23, halign: 'right' },      // Precio Final - Reducido ligeramente
+        7: { cellWidth: 19, halign: 'right' }       // Subtotal - Reducido ligeramente
       },
       didDrawPage: drawHeaderFooter
     });
