@@ -245,7 +245,15 @@ export default function ResumenCotizacion({
                                 )}
                                 
                                 <h4 className="font-semibold text-gray-900 text-sm leading-tight">
-                                    {item.nombre}
+                                    {/* Limpiar nombres legacy que puedan tener sucursales incluidas */}
+                                    {(() => {
+                                        let nombreLimpio = item.nombre || '';
+                                        const indiceSuc = nombreLimpio.lastIndexOf(' (Suc.');
+                                        if (indiceSuc !== -1) {
+                                            nombreLimpio = nombreLimpio.substring(0, indiceSuc).trim();
+                                        }
+                                        return nombreLimpio;
+                                    })()}
                                 </h4>
                                 <p className="text-xs text-gray-500 mt-1">
                                     SKU: {item.sku} • Cantidad: {item.cantidad}

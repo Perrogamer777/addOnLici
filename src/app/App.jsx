@@ -75,6 +75,33 @@ function App() {
     }
   }, [isLoadingResumen, itemsGuardados]);
 
+  // Limpiar nombres legacy que puedan tener sucursales incluidas
+  useEffect(() => {
+    if (itemsCotizacion.length > 0) {
+      const itemsLimpiados = itemsCotizacion.map(item => {
+        const nombreOriginal = item.nombre || '';
+        const indiceSuc = nombreOriginal.lastIndexOf(' (Suc.');
+        
+        if (indiceSuc !== -1) {
+          // Este item tiene un nombre legacy con sucursales, limpiarlo
+          const nombreLimpio = nombreOriginal.substring(0, indiceSuc).trim();
+          return { ...item, nombre: nombreLimpio };
+        }
+        
+        return item; // Sin cambios si ya está limpio
+      });
+      
+      // Solo actualizar si hubo cambios
+      const hayItemsModificados = itemsLimpiados.some((item, index) => 
+        item.nombre !== itemsCotizacion[index].nombre
+      );
+      
+      if (hayItemsModificados) {
+        setItemsCotizacion(itemsLimpiados);
+      }
+    }
+  }, [itemsCotizacion]);
+
   // Crear mapa de SKU y descripción de productos solicitados
   const mapaProductosSolicitados = useMemo(() => {
     const mapa = new Map();
@@ -219,7 +246,7 @@ const handleAgregarProductoDesdeModal = useCallback((producto, cantidad) => {
       const nuevoItem = {
         id: itemId,
         sku: producto.id,
-        nombre: `${producto.nombreCobol} (Suc. ${sucursal.nombreSucursal})`,
+        nombre: producto.nombreCobol, // Nombre limpio sin sucursales
         // Precio de tienda desde BD
         precioTienda: producto.precioUnitario || 0,
         // Mantener compatibilidad
@@ -311,18 +338,10 @@ const handleAgregarProductoDesdeModal = useCallback((producto, cantidad) => {
           }
         });
         
-        // Actualizar el nombre con todas las sucursales únicas
-        const sucursalesUnicas = [...new Set(detallesConsolidados.map(d => d.nombreSucursal))];
-        let nombreConSucursales = producto.nombreCobol;
-        if (sucursalesUnicas.length === 1) {
-          nombreConSucursales = `${producto.nombreCobol} (Suc. ${sucursalesUnicas[0]})`;
-        } else if (sucursalesUnicas.length > 1) {
-          nombreConSucursales = `${producto.nombreCobol} (Suc. ${sucursalesUnicas.join(', ')})`;
-        }
-        
+        // Guardar solo el nombre limpio, las sucursales van en detallesSucursales
         nuevosItems[itemExistenteIndex] = {
           ...itemExistente,
-          nombre: nombreConSucursales,
+          nombre: producto.nombreCobol, // Nombre limpio sin sucursales
           cantidad: itemExistente.cantidad + cantidadTotal,
           detallesSucursales: detallesConsolidados
         };
@@ -332,21 +351,11 @@ const handleAgregarProductoDesdeModal = useCallback((producto, cantidad) => {
         // Si no existe, crear nuevo item
         const itemId = `${producto.id}-${Date.now()}`;
         
-        // Construir el nombre con las sucursales (con validación)
-        let nombreConSucursales = producto.nombreCobol;
-        const sucursalesValidas = sucursalesSeleccionadas.filter(s => s.sucursal && s.sucursal.nombreSucursal);
-        
-        if (sucursalesValidas.length === 1) {
-          nombreConSucursales = `${producto.nombreCobol} (Suc. ${sucursalesValidas[0].sucursal.nombreSucursal})`;
-        } else if (sucursalesValidas.length > 1) {
-          const nombresSucursales = sucursalesValidas.map(s => s.sucursal.nombreSucursal).join(', ');
-          nombreConSucursales = `${producto.nombreCobol} (Suc. ${nombresSucursales})`;
-        }
-        
+        // Crear nuevo item con nombre limpio, las sucursales van en detallesSucursales
         const nuevoItem = {
           id: itemId,
           sku: producto.id,
-          nombre: nombreConSucursales,
+          nombre: producto.nombreCobol, // Nombre limpio sin sucursales
           precioTienda: producto.precioUnitario || 0,
           precioUnitario: producto.precioUnitario || 0,
           precioFinal: (producto.precioUnitario || 0),

@@ -53,11 +53,13 @@ export class generarPdf {
     const tableData = items.map((item, index) => {
       // Construir desglose de sucursales si existe
       let sucursales = '-';
-      // Limpiar nombre si ya contiene (Suc. XYZ) porque ahora mostramos una columna dedicada
+      // El nombre ahora viene limpio desde el origen, pero limpiamos por si hay items legacy
       let nombreProducto = item.nombre || '';
-      const tieneInfoSucursales = (Array.isArray(item.detallesSucursales) && item.detallesSucursales.length > 0) || !!item.sucursal;
-      if (tieneInfoSucursales) {
-        nombreProducto = nombreProducto.replace(/\s*\(Suc\.\s+[^)]+\)\s*$/i, '').trim();
+      
+      // Limpiar nombres legacy que puedan tener sucursales incluidas
+      const indiceSuc = nombreProducto.lastIndexOf(' (Suc.');
+      if (indiceSuc !== -1) {
+        nombreProducto = nombreProducto.substring(0, indiceSuc).trim();
       }
       if (Array.isArray(item.detallesSucursales) && item.detallesSucursales.length > 0) {
         sucursales = item.detallesSucursales
@@ -75,10 +77,14 @@ export class generarPdf {
       const precioFinal = (item.precioFinal ?? item.precioTienda ?? item.precioUnitario) || 0;
       const subtotal = item.cantidad * precioFinal;
 
+      console.log(`Item ${index} para PDF:`, item); // Debug
+      console.log(`Marca encontrada:`, item.marca); // Debug específico para marca
+      
       return [
         (index + 1).toString(),  
         item.sku || '',
         nombreProducto,
+        (item.marca && item.marca !== 'N/A') ? item.marca : '-',
         sucursales,
         item.cantidad || 0,
         `$${precioTienda.toLocaleString('es-CL')}`,
@@ -121,7 +127,7 @@ export class generarPdf {
 
     autoTable(doc, {
       startY: yPos,
-      head: [['#', 'SKU', 'Producto', 'Sucursales', 'Cant.', 'Precio Tienda', 'Precio Final', 'Subtotal']],
+      head: [['#', 'SKU', 'Producto', 'Marca', 'Sucursales', 'Cant.', 'Precio Tienda', 'Precio Final', 'Subtotal']],
       body: tableData,
       theme: 'striped',
       margin: { top: headerHeight + 8, right: margin, bottom: 20, left: margin },
@@ -144,14 +150,15 @@ export class generarPdf {
         minCellHeight: 12 // Altura mínima de celda para evitar superposición
       },
       columnStyles: {
-        0: { cellWidth: 12, halign: 'center' },     // # - Aumentado para evitar superposición
-        1: { cellWidth: 18 },                       // SKU
-        2: { cellWidth: 45 },                       // Producto - Reducido ligeramente
-        3: { cellWidth: 26, halign: 'left' },       // Sucursales - Reducido ligeramente
-        4: { cellWidth: 12, halign: 'center' },     // Cant.
-        5: { cellWidth: 23, halign: 'right' },      // Precio Tienda - Reducido ligeramente
-        6: { cellWidth: 23, halign: 'right' },      // Precio Final - Reducido ligeramente
-        7: { cellWidth: 19, halign: 'right' }       // Subtotal - Reducido ligeramente
+        0: { cellWidth: 10, halign: 'center' },     // #
+        1: { cellWidth: 16 },                       // SKU
+        2: { cellWidth: 38 },                       // Producto
+        3: { cellWidth: 16, halign: 'left' },       // Marca
+        4: { cellWidth: 22, halign: 'left' },       // Sucursales
+        5: { cellWidth: 10, halign: 'center' },     // Cant.
+        6: { cellWidth: 20, halign: 'right' },      // Precio Tienda
+        7: { cellWidth: 20, halign: 'right' },      // Precio Final
+        8: { cellWidth: 18, halign: 'right' }       // Subtotal
       },
       didDrawPage: drawHeaderFooter
     });
