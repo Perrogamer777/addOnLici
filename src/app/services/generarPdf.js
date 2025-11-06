@@ -116,14 +116,14 @@ export class generarPdf {
       },
       alternateRowStyles: { fillColor: [245, 248, 255] },
       columnStyles: {
-        0: { cellWidth: 10, halign: 'center' },   // #
-        1: { cellWidth: 20 },                      // SKU
-        2: { cellWidth: 46 },                      // Producto
-        3: { cellWidth: 18 },                      // Marca
-        4: { cellWidth: 14, halign: 'center' },    // Cant.
-        5: { cellWidth: 22, halign: 'right' },     // Precio Tienda
-        6: { cellWidth: 22, halign: 'right' },     // Precio Final
-        7: { cellWidth: 30, halign: 'right' }      // Subtotal
+        0: { cellWidth: 10, halign: 'center' },   
+        1: { cellWidth: 20 },                    
+        2: { cellWidth: 46 },                      
+        3: { cellWidth: 18 },                      
+        4: { cellWidth: 14, halign: 'center' },    
+        5: { cellWidth: 22, halign: 'right' },     
+        6: { cellWidth: 22, halign: 'right' },     
+        7: { cellWidth: 30, halign: 'right' }      
       },
       didDrawPage: drawHeaderFooter
     });
@@ -140,7 +140,7 @@ export class generarPdf {
       doc.addPage();
       const pageNumber = doc.internal.getCurrentPageInfo().pageNumber;
       drawHeaderFooter({ pageNumber });
-      boxY = headerHeight + 12; // debajo del header
+      boxY = headerHeight + 12; 
     }
 
   // Caja de totales

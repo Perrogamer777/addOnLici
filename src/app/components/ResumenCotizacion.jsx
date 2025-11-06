@@ -1,10 +1,22 @@
 import React, { useState } from 'react';
 import { generarPdf } from '../services/generarPdf';
+import { generarExcelResumen } from '../services/generarExcelResumen';
 
 const TrashIcon = () => <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>;
 const PDFIcon = () => (
     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+    </svg>
+);
+
+const ExcelIcon = () => (
+    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        {/* Carpeta/hoja */}
+        <rect x="3" y="4" width="14" height="16" rx="2" ry="2" strokeWidth="2"></rect>
+        {/* X de Excel */}
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7.5 9.5l5 5M12.5 9.5l-5 5"></path>
+        {/* Separador para estilo de hoja */}
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 7v10"></path>
     </svg>
 );
 
@@ -60,16 +72,17 @@ export default function ResumenCotizacion({
         const doc = generarPdf.generarCotizacion(items, infoLicitacion, totales);
         
         // Descargar directamente
-        const nombreArchivo = `cotizacion_${infoLicitacion?.idLicitacion || 'sin-id'}_${Date.now()}.pdf`;
+        const fecha = new Date();
+        const fechaFormateada = `${fecha.getFullYear()}-${(fecha.getMonth() + 1).toString().padStart(2, '0')}-${fecha.getDate().toString().padStart(2, '0')}_${fecha.getHours().toString().padStart(2, '0')}:${fecha.getMinutes().toString().padStart(2, '0')}`;
+        const nombreArchivo = `cotizacion_${infoLicitacion?.idLicitacion || 'sin-id'}_${fechaFormateada}.pdf`;
         generarPdf.descargarPDF(doc, nombreArchivo);
-        
     };
 
     const handleEliminarTodos = () => {
         if (items.length === 0) return;
         if (!confirmarEliminarTodos) {
             setConfirmarEliminarTodos(true);
-            // Autocancelar confirmación después de 4s
+            // cancelar confirmación después de 4s
             setTimeout(() => setConfirmarEliminarTodos(false), 4000);
             return;
         }
@@ -94,6 +107,19 @@ export default function ResumenCotizacion({
                     >
                         <PDFIcon />
                         Exportar a PDF
+                    </button>
+
+                    <button
+                        type="button"
+                        onClick={() => {
+                            console.log('Botón Excel clickeado. Items:', items);
+                            generarExcelResumen(items, infoLicitacion);
+                        }}
+                        className="px-3 py-1 text-xs font-semibold rounded transition-colors flex items-center gap-2 bg-green-600 text-white hover:bg-green-700"
+                        title="Exportar a Excel"
+                    >
+                        <ExcelIcon />
+                        Exportar a Excel
                     </button>
 
                     {/* Botón Eliminar Todos */}
