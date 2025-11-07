@@ -6,13 +6,15 @@ import { useIframeAutoResize } from './hooks/useIframeAutoResize';
 import { useProductosSoli } from './hooks/useProductosSoliData';
 import { useObtenerSugerencia } from './hooks/useObtenerSugerencia';
 
+const API_BASE_URL = 'http://localhost:8080/datos-internos';
+
 import HeaderInfo from './components/HeaderInfo';
 import ProductosSolicitados from './components/ProductosSolicitados';
 import ResumenCotizacion from './components/ResumenCotizacion';
 import StockModal from './components/StockModal';
 import SaveConfirmation from './components/SaveConfirmation';
 import ModalGenerarCotizacion from './components/ModalGenerarCotizacion';
-import ModalAgregarPorSucursal from './components/ModalAgregarPorSucursal';
+
 import ModalBuscarProductos from './components/ModalBuscarProductos';
 import ModalReporteAgregado from './components/ModalReporteAgregado';
 import { useResumenCotizacion } from './hooks/useResumenCotizacion';
@@ -30,6 +32,7 @@ function App() {
   const [isLoadingSugerencia, setIsLoadingSugerencia] = useState(null);
   const [isLoadingSugerencias, setIsLoadingSugerencias] = useState(false);
   const [sugerenciasAgregadas, setSugerenciasAgregadas] = useState(false);
+  const [skusSinSugerencia, setSkusSinSugerencia] = useState(new Set());
 
 
   // Estados de UI y Cotización
@@ -40,7 +43,7 @@ function App() {
   const [showModalGenerarCotizacion, setShowModalGenerarCotizacion] = useState(false);
   const [productAddedToast, setProductAddedToast] = useState('idle');
   const [lastAddedProduct, setLastAddedProduct] = useState(null);
-  const [modalStockDataSucursal, setModalStockDataSucursal] = useState(null);
+
   const [isBusquedaOpen, setIsBusquedaOpen] = useState(false);
   const [initialSearchTerm, setInitialSearchTerm] = useState('');
   const [nombreProductoOrigen, setNombreProductoOrigen] = useState('');
@@ -199,16 +202,87 @@ function App() {
     
     try {
       const resultado = await obtenerSugerencia(itemSolicitado);
-      if (resultado) {
-        setModalStockDataSucursal(resultado);
+      if (resultado && resultado.producto) {
+        const { producto, cantidad, originalSku } = resultado;
+        
+        // Verificar si el producto tiene stock
+        if (producto.stockTotal > 0) {
+          try {
+            // Obtener información de stock por sucursal
+            const response = await fetch(
+              `${API_BASE_URL}/catalogo/productos/${producto.id}/stock-sucursales`
+            );
+            
+            if (response.ok) {
+              const stockSucursales = await response.json();
+              
+              if (stockSucursales && stockSucursales.length > 0) {
+                // Filtrar sucursales con stock disponible
+                const sucursalesConStock = stockSucursales.filter(s => s.stock > 0);
+                
+                if (sucursalesConStock.length > 0) {
+                  // Distribuir la cantidad automáticamente entre las sucursales con stock
+                  let cantidadRestante = cantidad;
+                  const sucursalesSeleccionadas = [];
+                  
+                  for (const sucursal of sucursalesConStock) {
+                    if (cantidadRestante <= 0) break;
+                    
+                    const cantidadParaEstaSucursal = Math.min(cantidadRestante, sucursal.stock);
+                    if (cantidadParaEstaSucursal > 0) {
+                      sucursalesSeleccionadas.push({
+                        sucursal: {
+                          nombreSucursal: sucursal.nombreSucursal
+                        },
+                        cantidad: cantidadParaEstaSucursal
+                      });
+                      cantidadRestante -= cantidadParaEstaSucursal;
+                    }
+                  }
+                  
+                  if (sucursalesSeleccionadas.length > 0) {
+                    // Agregar producto automáticamente con el originalSku del item solicitado
+                    const productoConOriginal = {
+                      ...producto,
+                      originalSolicitadoSku: originalSku
+                    };
+                    handleAgregarDesdeMultiplesSucursales(productoConOriginal, sucursalesSeleccionadas);
+                    
+                    // Mostrar mensaje de éxito
+                    console.log(`Producto sugerido agregado: ${producto.nombreCobol} (${sucursalesSeleccionadas.reduce((total, s) => total + s.cantidad, 0)} unidades)`);
+                  } else {
+                    console.log("No hay stock suficiente en ninguna sucursal para la sugerencia");
+                    handleBuscarProductoClick(itemSolicitado.descripcion, itemSolicitado.sku);
+                  }
+                } else {
+                  console.log("El producto sugerido no tiene stock disponible");
+                  setSkusSinSugerencia(prev => new Set([...prev, itemSolicitado.sku]));
+                }
+              } else {
+                console.log("No se pudieron obtener las sucursales del producto sugerido");
+                setSkusSinSugerencia(prev => new Set([...prev, itemSolicitado.sku]));
+              }
+            } else {
+              console.log("Error al obtener stock por sucursal del producto sugerido");
+              setSkusSinSugerencia(prev => new Set([...prev, itemSolicitado.sku]));
+            }
+          } catch (stockError) {
+            console.error("Error al obtener stock por sucursal:", stockError);
+            setSkusSinSugerencia(prev => new Set([...prev, itemSolicitado.sku]));
+          }
+        } else {
+          console.log("El producto sugerido no tiene stock disponible");
+          setSkusSinSugerencia(prev => new Set([...prev, itemSolicitado.sku]));
+        }
       } else {
-        // Si no hay sugerencia, abrir búsqueda vinculada al SKU solicitado
-        handleBuscarProductoClick(itemSolicitado.descripcion, itemSolicitado.sku);
+        // Si no hay sugerencia, marcar como sin sugerencia
+        console.log("No se encontró sugerencia para este producto");
+        setSkusSinSugerencia(prev => new Set([...prev, itemSolicitado.sku]));
       }
 
     } catch (error) {
       console.error("Fallo al obtener sugerencia:", error);
-      handleBuscarProductoClick(itemSolicitado.descripcion, itemSolicitado.sku);
+      setSkusSinSugerencia(prev => new Set([...prev, itemSolicitado.sku]));
     } finally {
       setIsLoadingSugerencia(null); 
     }
@@ -219,93 +293,22 @@ function App() {
     setInitialSearchTerm(terminoBusqueda); 
     setNombreProductoOrigen(terminoBusqueda);
     setSkuSolicitadoActual(skuSolicitado); // Guardar el SKU solicitado si se está reemplazando
+    
+    // Limpiar el SKU de la lista de sin sugerencia para permitir reintentar
+    if (skuSolicitado) {
+      setSkusSinSugerencia(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(skuSolicitado);
+        return newSet;
+      });
+    }
+    
     setIsBusquedaOpen(true); 
   }, []); 
 
 
   const handleConfirmSend = useCallback(() => { /* ... */ }, [itemsCotizacion, licitacionData]);
   useEffect(() => { /* ... */ }, []);
-
-
-const handleAgregarProductoDesdeModal = useCallback((producto, cantidad) => {
-
-    const productoParaModalSucursal = {
-        id: producto.sku,       
-        nombreCobol: producto.nombre, 
-        marca: producto.marca,
-        categoria: producto.categoria,
-        precioUnitario: producto.precioUnitario || 0, 
-    };
-
-  // se incluye el SKU solicitado actual para mantener la referencia
-  setModalStockDataSucursal({ producto: productoParaModalSucursal, cantidad, originalSku: skuSolicitadoActual });
-    setIsBusquedaOpen(false); 
-  }, []);
-
-
-  const handleAgregarDesdeSucursal = useCallback((producto, sucursal, cantidad, originalSku) => { 
-      const itemId = `${producto.sku}-${sucursal.nombreSucursal}-${Date.now()}`;
-      
-      // usar el originalSku
-      const skuFinal = skuSolicitadoActual || originalSku;
-      
-      const nuevoItem = {
-        id: itemId,
-        sku: producto.sku,
-        nombre: producto.nombre, // Nombre limpio sin sucursales
-        marca: producto.marca,
-        categoria: producto.categoria,
-        // Precio de tienda desde BD
-        precioTienda: producto.precioUnitario || 0,
-        // Mantener compatibilidad
-        precioUnitario: producto.precioUnitario || 0,
-        // Precio final editable (inicia igual al de tienda)
-        precioFinal: (producto.precioUnitario || 0),
-        cantidad: cantidad,
-        sucursal: sucursal.nombreSucursal,
-        originalSolicitadoSku: skuFinal,
-        originalSolicitadoNombre: mapaProductosSolicitados.get(skuFinal) || null
-      };
-
-      setItemsCotizacion(prevItems => {
-        // Si hay itemIdPendiente en modalData, eliminar ese item pendiente
-        const itemPendienteId = modalStockDataSucursal?.itemIdPendiente;
-        let itemsFiltrados = prevItems;
-        let insertIndex = prevItems.length; // Por defecto, al final
-        
-        if (itemPendienteId) {
-          // Eliminar item pendiente que se está reemplazando
-          // preservar la marca esAgregadoMasivo si existía
-          const itemOriginal = prevItems.find(item => item.id === itemPendienteId);
-          if (itemOriginal?.esAgregadoMasivo) {
-            nuevoItem.esAgregadoMasivo = true; 
-          }
-          // Encontrar la posición del item pendiente
-          insertIndex = prevItems.findIndex(item => item.id === itemPendienteId);
-          itemsFiltrados = prevItems.filter(item => item.id !== itemPendienteId);
-        } else if (skuFinal) {
-          // Buscar si ya existe un item con el mismo originalSolicitadoSku para mantener orden cerca
-          const itemExistenteIndex = prevItems.findIndex(item => item.originalSolicitadoSku === skuFinal);
-          if (itemExistenteIndex !== -1) {
-            insertIndex = itemExistenteIndex + 1; // Insertar justo después
-          }
-          itemsFiltrados = prevItems.filter(item => item.originalSolicitadoSku !== skuFinal || item.sucursal !== sucursal.nombreSucursal);
-        }
-        
-        // Insertar el nuevo item en la posición correcta
-        const nuevosItems = [...itemsFiltrados];
-        nuevosItems.splice(insertIndex, 0, nuevoItem);
-        return nuevosItems;
-      });
-
-      // Destacar el producto solicitado 
-      setSkuRecienAgregado(skuFinal);
-      setTimeout(() => setSkuRecienAgregado(null), 3000);
-      
-      // Cerrar modal y limpiar estados
-      setModalStockDataSucursal(null);
-      setSkuSolicitadoActual(null);
-  }, [skuSolicitadoActual, modalStockDataSucursal, mapaProductosSolicitados]);
 
   // Nueva función para agregar desde múltiples sucursales
   const handleAgregarDesdeMultiplesSucursales = useCallback((producto, sucursalesSeleccionadas) => {
@@ -385,6 +388,129 @@ const handleAgregarProductoDesdeModal = useCallback((producto, cantidad) => {
     setModalStockData(null);
   }, [mapaProductosSolicitados]);
 
+
+const handleAgregarProductoDesdeModal = useCallback(async (producto, cantidad) => {
+    try {
+      // Obtener información de stock por sucursal
+      const response = await fetch(
+        `${API_BASE_URL}/catalogo/productos/${producto.sku}/stock-sucursales`
+      );
+      
+      if (response.ok) {
+        const stockSucursales = await response.json();
+        
+        if (stockSucursales && stockSucursales.length > 0) {
+          // Filtrar sucursales con stock disponible
+          const sucursalesConStock = stockSucursales.filter(s => s.stock > 0);
+          
+          if (sucursalesConStock.length > 0) {
+            // Distribuir la cantidad automáticamente entre las sucursales con stock
+            let cantidadRestante = cantidad;
+            const sucursalesSeleccionadas = [];
+            
+            for (const sucursal of sucursalesConStock) {
+              if (cantidadRestante <= 0) break;
+              
+              const cantidadParaEstaSucursal = Math.min(cantidadRestante, sucursal.stock);
+              if (cantidadParaEstaSucursal > 0) {
+                sucursalesSeleccionadas.push({
+                  sucursal: {
+                    nombreSucursal: sucursal.nombreSucursal
+                  },
+                  cantidad: cantidadParaEstaSucursal
+                });
+                cantidadRestante -= cantidadParaEstaSucursal;
+              }
+            }
+            
+            if (sucursalesSeleccionadas.length > 0) {
+              // Crear producto con los campos necesarios
+              const productoParaAgregar = {
+                id: producto.sku,
+                nombreCobol: producto.nombre,
+                marca: producto.marca,
+                categoria: producto.categoria,
+                precioUnitario: producto.precioUnitario || 0,
+                originalSolicitadoSku: skuSolicitadoActual
+              };
+              
+              // Agregar producto automáticamente
+              handleAgregarDesdeMultiplesSucursales(productoParaAgregar, sucursalesSeleccionadas);
+              
+              console.log(`Producto agregado: ${producto.nombre} (${sucursalesSeleccionadas.reduce((total, s) => total + s.cantidad, 0)} unidades)`);
+            } else {
+              console.log("No hay stock suficiente en ninguna sucursal");
+            }
+          } else {
+            console.log("El producto no tiene stock disponible en ninguna sucursal");
+          }
+        } else {
+          console.log("No se pudieron obtener las sucursales del producto");
+        }
+      } else {
+        console.log("Error al obtener stock por sucursal del producto");
+      }
+    } catch (error) {
+      console.error("Error al agregar producto desde modal:", error);
+    }
+    
+    setIsBusquedaOpen(false);
+  }, [skuSolicitadoActual, handleAgregarDesdeMultiplesSucursales]);
+
+
+  const handleAgregarDesdeSucursal = useCallback((producto, sucursal, cantidad, originalSku) => { 
+      const itemId = `${producto.sku}-${sucursal.nombreSucursal}-${Date.now()}`;
+      
+      // usar el originalSku
+      const skuFinal = skuSolicitadoActual || originalSku;
+      
+      const nuevoItem = {
+        id: itemId,
+        sku: producto.sku,
+        nombre: producto.nombre, // Nombre limpio sin sucursales
+        marca: producto.marca,
+        categoria: producto.categoria,
+        // Precio de tienda desde BD
+        precioTienda: producto.precioUnitario || 0,
+        // Mantener compatibilidad
+        precioUnitario: producto.precioUnitario || 0,
+        // Precio final editable (inicia igual al de tienda)
+        precioFinal: (producto.precioUnitario || 0),
+        cantidad: cantidad,
+        sucursal: sucursal.nombreSucursal,
+        originalSolicitadoSku: skuFinal,
+        originalSolicitadoNombre: mapaProductosSolicitados.get(skuFinal) || null
+      };
+
+      setItemsCotizacion(prevItems => {
+        let itemsFiltrados = prevItems;
+        let insertIndex = prevItems.length; // Por defecto, al final
+        
+        if (skuFinal) {
+          // Buscar si ya existe un item con el mismo originalSolicitadoSku para mantener orden cerca
+          const itemExistenteIndex = prevItems.findIndex(item => item.originalSolicitadoSku === skuFinal);
+          if (itemExistenteIndex !== -1) {
+            insertIndex = itemExistenteIndex + 1; // Insertar justo después
+          }
+          itemsFiltrados = prevItems.filter(item => item.originalSolicitadoSku !== skuFinal || item.sucursal !== sucursal.nombreSucursal);
+        }
+        
+        // Insertar el nuevo item en la posición correcta
+        const nuevosItems = [...itemsFiltrados];
+        nuevosItems.splice(insertIndex, 0, nuevoItem);
+        return nuevosItems;
+      });
+
+      // Destacar el producto solicitado 
+      setSkuRecienAgregado(skuFinal);
+      setTimeout(() => setSkuRecienAgregado(null), 3000);
+      
+      // Limpiar estados
+      setSkuSolicitadoActual(null);
+  }, [skuSolicitadoActual, mapaProductosSolicitados]);
+
+
+
   // Función para destacar un producto al hacer clic en el sku de referencia
   const handleDestacarProducto = useCallback((sku) => {
     setSkuRecienAgregado(sku);
@@ -405,21 +531,8 @@ const skusAgregados = useMemo(() =>
   }, []);
   
   const handleUpdateCantidad = useCallback((itemId, nuevaCantidad) => {
-      const item = itemsCotizacion.find(i => i.id === itemId);
-      
-      // Si el item tiene sucursal pendiente (null) y se incrementa cantidad desde 0
-      if (item && item.sucursal === null && item.cantidad === 0 && nuevaCantidad > 0) {
-        // Abrir modal de sucursales para asignar
-        setModalStockDataSucursal({
-          producto: item,
-          cantidad: nuevaCantidad,
-          originalSku: item.originalSolicitadoSku,
-          itemIdPendiente: itemId
-        });
-      } else {
-        setItemsCotizacion(prev => prev.map(i => i.id === itemId ? { ...i, cantidad: nuevaCantidad, categoria: i.categoria } : i));
-      }
-  }, [itemsCotizacion]);
+      setItemsCotizacion(prev => prev.map(i => i.id === itemId ? { ...i, cantidad: nuevaCantidad, categoria: i.categoria } : i));
+  }, []);
   
   const handleUpdatePrecioFinal = useCallback((itemId, nuevoPrecio) => {
     const precioNumber = Number.isFinite(nuevoPrecio) ? nuevoPrecio : 0;
@@ -474,6 +587,7 @@ const skusAgregados = useMemo(() =>
             onLimpiarSugerencias={handleLimpiarSugerencias}
             sugerenciasAgregadas={sugerenciasAgregadas}
             skuRecienAgregado={skuRecienAgregado}
+            skusSinSugerencia={skusSinSugerencia}
           />
 
 
@@ -505,12 +619,7 @@ const skusAgregados = useMemo(() =>
         itemsCotizacion={itemsCotizacion}
       />
 
-      {/* Modal para Agregar por Sucursal */}
-      <ModalAgregarPorSucursal
-        modalData={modalStockDataSucursal}
-        onClose={() => setModalStockDataSucursal(null)}
-        onAgregarDesdeSucursal={handleAgregarDesdeSucursal}
-      />
+
 
       {/* Modal para Buscar Productos */}
       <ModalBuscarProductos

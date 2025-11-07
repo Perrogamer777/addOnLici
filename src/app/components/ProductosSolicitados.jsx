@@ -10,7 +10,8 @@ export default function ProductosSolicitados({
   isLoadingSugerencias,
   onLimpiarSugerencias,
   sugerenciasAgregadas,
-  skuRecienAgregado
+  skuRecienAgregado,
+  skusSinSugerencia
 }) {
   
   const isScrollable = items.length > 3;
@@ -186,11 +187,23 @@ export default function ProductosSolicitados({
                         <div className="flex gap-2 justify-center">
                           <button 
                             type="button" 
-                            className="px-3 py-1 bg-blue-100 text-blue-700 text-xs font-semibold rounded-full hover:bg-blue-200" 
-                            onClick={() => onSugerenciaClick(item)} 
-                            disabled={loadingSku === item.sku}
+                            className={`px-3 py-1 text-xs font-semibold rounded-full ${
+                              skusSinSugerencia && skusSinSugerencia.has(item.sku)
+                                ? 'bg-gray-200 text-gray-600 cursor-not-allowed' 
+                                : 'bg-blue-100 text-blue-700 hover:bg-blue-200'
+                            }`}
+                            onClick={() => {
+                              if (!skusSinSugerencia || !skusSinSugerencia.has(item.sku)) {
+                                onSugerenciaClick(item);
+                              }
+                            }} 
+                            disabled={loadingSku === item.sku || (skusSinSugerencia && skusSinSugerencia.has(item.sku))}
                           >
-                            {loadingSku === item.sku ? 'Buscando...' : 'Sugerencia'}
+                            {loadingSku === item.sku 
+                              ? 'Buscando...' 
+                              : skusSinSugerencia && skusSinSugerencia.has(item.sku)
+                                ? 'Sin sugerencia'
+                                : 'Sugerencia'}
                           </button>
 
                           <button 
