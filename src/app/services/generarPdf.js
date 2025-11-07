@@ -6,212 +6,167 @@ export class generarPdf {
     const doc = new jsPDF();
     const pageWidth = doc.internal.pageSize.getWidth();
     const pageHeight = doc.internal.pageSize.getHeight();
-    const margin = 14;
-    const headerHeight = 20;
+    const margin = 15;
 
-    // Info de la licitación
-  doc.setFontSize(10);
-  doc.setTextColor(0, 0, 0);
-  let yPos = headerHeight + 12;
-    
-    if (infoLicitacion) {
-      // Título sección info
+    // --- Colores y Fuentes ---
+    const primaryColor = '#2c3e50'; 
+    const secondaryColor = '#3498db'; 
+    const textColor = '#34495e'; 
+    const lightGray = '#ecf0f1'; 
+    const white = '#ffffff';
+
+    doc.setFont('helvetica', 'normal');
+
+    // --- Header ---
+    const drawHeader = () => {
+      // Fondo del header
+      doc.setFillColor(primaryColor);
+      doc.rect(0, 0, pageWidth, 30, 'F');
+
+      // Título
+      doc.setFontSize(22);
       doc.setFont('helvetica', 'bold');
-      doc.setTextColor(30);
-      doc.text('Información de la Licitación', margin, yPos);
-      doc.setFont('helvetica', 'normal');
-      doc.setTextColor(60);
-      yPos += 6;
-
-      const info = [
-        [`ID Licitación:`, `${infoLicitacion.idLicitacion || 'N/A'}`],
-        [`Cliente:`, `${infoLicitacion.empresaCompradora || 'N/A'}`],
-        [`Fecha:`, `${new Date().toLocaleDateString('es-CL')}`]
-      ];
-      const labelColor = 100;
-      const valueColor = 20;
-      const colGap = 80;
-      const leftX = margin;
-
-      info.forEach((pair, idx) => {
-        const rowY = yPos + idx * 5.5;
-        doc.setTextColor(labelColor);
-        doc.text(pair[0], leftX, rowY);
-        doc.setTextColor(valueColor);
-        doc.text(pair[1], leftX + colGap, rowY);
-      });
-
-      yPos += info.length * 5.5 + 6;
-      // Separador
-      doc.setDrawColor(230);
-      doc.setLineWidth(0.2);
-      doc.line(margin, yPos, pageWidth - margin, yPos);
-      yPos += 6;
-    }
-    
-    // Tabla de productos
-    const tableData = items.map((item, index) => {
-      // Construir desglose de sucursales si existe
-      let sucursales = '-';
-      // El nombre ahora viene limpio desde el origen, pero limpiamos por si hay items legacy
-      let nombreProducto = item.nombre || '';
-      
-      // Limpiar nombres legacy que puedan tener sucursales incluidas
-      const indiceSuc = nombreProducto.lastIndexOf(' (Suc.');
-      if (indiceSuc !== -1) {
-        nombreProducto = nombreProducto.substring(0, indiceSuc).trim();
-      }
-      if (Array.isArray(item.detallesSucursales) && item.detallesSucursales.length > 0) {
-        sucursales = item.detallesSucursales
-          .map(d => `${d.nombreSucursal}: ${d.cantidad}`)
-          .join(' | ');
-      } else if (item.sucursal) {
-        // Compatibilidad hacia atrás (items antiguos con una sola sucursal)
-        sucursales = `${item.sucursal}: ${item.cantidad}`;
-      } else {
-        // Si el nombre ya incluye (Suc. XXX), lo dejamos visible en nombre
-        sucursales = '-';
-      }
-
-      const precioTienda = (item.precioTienda ?? item.precioUnitario) || 0;
-      const precioFinal = (item.precioFinal ?? item.precioTienda ?? item.precioUnitario) || 0;
-      const subtotal = item.cantidad * precioFinal;
-
-      console.log(`Item ${index} para PDF:`, item); // Debug
-      console.log(`Marca encontrada:`, item.marca); // Debug específico para marca
-      
-      return [
-        (index + 1).toString(),  
-        item.sku || '',
-        nombreProducto,
-        (item.marca && item.marca !== 'N/A') ? item.marca : '-',
-        sucursales,
-        item.cantidad || 0,
-        `$${precioTienda.toLocaleString('es-CL')}`,
-        `$${precioFinal.toLocaleString('es-CL')}`,
-        `$${subtotal.toLocaleString('es-CL')}`
-      ];
-    });
-    
-    // Header y footer en cada página (barra superior y número de página)
-    const drawHeaderFooter = (data) => {
-      // Header
-      doc.setFillColor(0, 102, 204);
-      doc.rect(0, 0, pageWidth, headerHeight, 'F');
-      doc.setTextColor(255, 255, 255);
-      doc.setFontSize(14);
-      doc.setFont('helvetica', 'bold');
-      doc.text('Cotización', margin, headerHeight / 1.4);
-      // Datos breves derecha
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(9);
-      const fechaStr = new Date().toLocaleDateString('es-CL');
-      const headerRight = [
-        infoLicitacion?.idLicitacion ? `ID: ${infoLicitacion.idLicitacion}` : null,
-        `Fecha: ${fechaStr}`
-      ].filter(Boolean);
-      const rightX = pageWidth - margin;
-      headerRight.forEach((txt, i) => {
-        doc.text(txt, rightX, 8 + i * 5, { align: 'right', baseline: 'middle' });
-      });
-      // Footer
-      const page = data.pageNumber;
-      const pages = doc.internal.getNumberOfPages();
-      doc.setDrawColor(230);
-      doc.setLineWidth(0.2);
-      doc.line(margin, pageHeight - 12, pageWidth - margin, pageHeight - 12);
-      doc.setTextColor(120);
-      doc.setFontSize(9);
-      doc.text(`Página ${page} de ${pages}`, pageWidth - margin, pageHeight - 7, { align: 'right' });
+      doc.setTextColor(white);
+      doc.text('Cotización', pageWidth - margin, 18, { align: 'right' });
     };
 
+    // --- Footer ---
+    const drawFooter = (data) => {
+      const page = data.pageNumber;
+      const pages = doc.internal.getNumberOfPages();
+      
+      doc.setFontSize(8);
+      doc.setTextColor(textColor);
+      
+      const footerText = `Página ${page} de ${pages}`;
+      const footerY = pageHeight - 10;
+
+      doc.setLineWidth(0.2);
+      doc.setDrawColor(lightGray);
+      doc.line(margin, footerY - 2, pageWidth - margin, footerY - 2);
+
+      doc.text(footerText, pageWidth / 2, footerY, { align: 'center' });
+      doc.text(new Date().toLocaleDateString('es-CL'), pageWidth - margin, footerY, { align: 'right' });
+    };
+
+    // --- Información de la Licitación ---
+    const drawInfoLicitacion = () => {
+      let yPos = 40;
+      if (infoLicitacion) {
+        doc.setFontSize(10);
+        doc.setTextColor(textColor);
+
+        const info = [
+          { label: 'ID Licitación:', value: infoLicitacion.idLicitacion || 'N/A' },
+          { label: 'Cliente:', value: infoLicitacion.empresaCompradora || 'N/A' },
+          { label: 'Fecha de Emisión:', value: new Date().toLocaleDateString('es-CL') },
+        ];
+
+        autoTable(doc, {
+          startY: yPos,
+          body: info.map(i => [i.label, i.value]),
+          theme: 'plain',
+          styles: {
+            fontSize: 10,
+            cellPadding: { top: 1.5, right: 0, bottom: 1.5, left: 0 },
+          },
+          columnStyles: {
+            0: { fontStyle: 'bold' },
+          },
+        });
+        
+        return doc.lastAutoTable.finalY + 10;
+      }
+      return yPos;
+    };
+
+    // --- Tabla de Productos ---
+    const tableData = items.map(item => {
+      const precioFinal = (item.precioFinal ?? item.precioTienda ?? item.precioUnitario) || 0;
+      const total = item.cantidad * precioFinal;
+
+      return [
+        item.sku || '-',
+        item.nombre || '-',
+        (item.marca && item.marca.trim() !== '') ? item.marca : '-',
+        item.cantidad || 0,
+        `$${precioFinal.toLocaleString('es-CL')}`,
+        `$${total.toLocaleString('es-CL')}`
+      ];
+    });
+
+    const startY = drawInfoLicitacion();
+
     autoTable(doc, {
-      startY: yPos,
-      head: [['#', 'SKU', 'Producto', 'Marca', 'Sucursales', 'Cant.', 'Precio Tienda', 'Precio Final', 'Subtotal']],
+      startY: startY,
+      head: [['SKU', 'Nombre', 'Marca', 'Unidades', 'Precio Unitario', 'Total']],
       body: tableData,
       theme: 'striped',
-      margin: { top: headerHeight + 8, right: margin, bottom: 20, left: margin },
       headStyles: {
-        fillColor: [0, 102, 204],
-        textColor: 255,
+        fillColor: primaryColor,
+        textColor: white,
         fontStyle: 'bold',
         halign: 'center',
-        lineColor: [0, 102, 204],
-        lineWidth: 0.2
       },
-      alternateRowStyles: { fillColor: [245, 248, 255] },
+      alternateRowStyles: { fillColor: lightGray },
       styles: {
         fontSize: 9,
-        cellPadding: { top: 4, right: 3, bottom: 4, left: 3 }, // Más padding vertical
-        overflow: 'linebreak',
-        lineColor: [230, 230, 230],
-        lineWidth: 0.1,
+        cellPadding: { top: 4, right: 4, bottom: 4, left: 4 },
         valign: 'middle',
-        minCellHeight: 12 // Altura mínima de celda para evitar superposición
+        lineColor: '#cccccc',
+        lineWidth: 0.1,
       },
       columnStyles: {
-        0: { cellWidth: 10, halign: 'center' },     // #
-        1: { cellWidth: 16 },                       // SKU
-        2: { cellWidth: 38 },                       // Producto
-        3: { cellWidth: 16, halign: 'left' },       // Marca
-        4: { cellWidth: 22, halign: 'left' },       // Sucursales
-        5: { cellWidth: 10, halign: 'center' },     // Cant.
-        6: { cellWidth: 20, halign: 'right' },      // Precio Tienda
-        7: { cellWidth: 20, halign: 'right' },      // Precio Final
-        8: { cellWidth: 18, halign: 'right' }       // Subtotal
+        0: { cellWidth: 25, halign: 'left' },    // SKU
+        1: { cellWidth: 'auto', halign: 'left' }, // Nombre
+        2: { cellWidth: 30, halign: 'left' },    // Marca
+        3: { cellWidth: 20, halign: 'center' },  // Unidades
+        4: { cellWidth: 30, halign: 'right' },   // Precio Unitario
+        5: { cellWidth: 30, halign: 'right' },   // Total
       },
-      didDrawPage: drawHeaderFooter
+      didDrawPage: (data) => {
+        drawHeader();
+        drawFooter(data);
+      }
     });
-    
-    // Totales
-    const finalY = doc.lastAutoTable.finalY + 8;
-    const boxWidth = 80;
-    const boxHeight = 28;
-    const boxX = pageWidth - margin - boxWidth;
-    let boxY = finalY;
 
-    // Si no cabe la caja de totales en la página actual, agrega una nueva página
-    if (boxY + boxHeight > pageHeight - margin) {
-      doc.addPage();
-      const pageNumber = doc.internal.getCurrentPageInfo().pageNumber;
-      drawHeaderFooter({ pageNumber });
-      boxY = headerHeight + 12; 
-    }
+    // --- Totales ---
+    const finalY = doc.lastAutoTable.finalY + 10;
+    const totals = [
+      { label: 'Neto', value: `$${Math.round(totales.neto).toLocaleString('es-CL')}` },
+      { label: 'IVA (19%)', value: `$${Math.round(totales.iva).toLocaleString('es-CL')}` },
+      { label: 'Total', value: `$${Math.round(totales.total).toLocaleString('es-CL')}` }
+    ];
 
-  // Caja de totales
-  doc.setFillColor(248, 249, 251);
-  doc.setDrawColor(220);
-  doc.setLineWidth(0.3);
-  doc.rect(boxX, boxY, boxWidth, boxHeight, 'FD');
+    autoTable(doc, {
+      startY: finalY,
+      body: totals,
+      theme: 'plain',
+      tableWidth: 60,
+      margin: { left: pageWidth - margin - 60 },
+      styles: {
+        fontSize: 10,
+        cellPadding: { top: 2, right: 2, bottom: 2, left: 2 },
+      },
+      columnStyles: {
+        0: { fontStyle: 'bold', halign: 'left' },
+        1: { halign: 'right' },
+      },
+      didParseCell: (data) => {
+        if (data.row.index === 2) { // Fila del Total
+          data.cell.styles.fontStyle = 'bold';
+          data.cell.styles.fontSize = 11;
+        }
+      }
+    });
 
-  const labelX = boxX + 6;
-  const valueX = boxX + boxWidth - 6;
-  doc.setFont('helvetica', 'normal');
-  doc.setTextColor(80);
-  doc.setFontSize(10);
-  doc.text('Neto', labelX, boxY + 8);
-  doc.text(`$${Math.round(totales.neto).toLocaleString('es-CL')}`, valueX, boxY + 8, { align: 'right' });
-
-  doc.text('IVA (19%)', labelX, boxY + 15);
-  doc.text(`$${Math.round(totales.iva).toLocaleString('es-CL')}`, valueX, boxY + 15, { align: 'right' });
-
-  doc.setDrawColor(230);
-  doc.setLineWidth(0.2);
-  doc.line(labelX, boxY + 18, boxX + boxWidth - 6, boxY + 18);
-
-  doc.setFont('helvetica', 'bold');
-  doc.setTextColor(20);
-  doc.setFontSize(11);
-  doc.text('Total', labelX, boxY + 25);
-  doc.text(`$${Math.round(totales.total).toLocaleString('es-CL')}`, valueX, boxY + 25, { align: 'right' });
-    
     return doc;
   }
-  
+
   static descargarPDF(doc, nombreArchivo = 'cotizacion.pdf') {
     doc.save(nombreArchivo);
   }
-  
+
   static abrirPDF(doc) {
     window.open(doc.output('bloburl'), '_blank');
   }

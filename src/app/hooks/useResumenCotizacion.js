@@ -22,7 +22,7 @@ export const useResumenCotizacion = (idLicitacion) => {
     if (!client || !idLicitacion) return;
 
     const cargarResumenGuardado = async () => {
-      console.log(`Cargando resumen guardado para id: ${idLicitacion}...`);
+      console.log(`Cargando resumen guardado para id: ${idLicitacion}`);
       setIsLoading(true);
       setError(null);
       const controller = new AbortController();

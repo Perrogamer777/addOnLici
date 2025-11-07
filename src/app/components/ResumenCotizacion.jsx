@@ -312,6 +312,7 @@ export default function ResumenCotizacion({
                                             onOpenStockModal({
                                                 id: item.sku,
                                                 nombreCobol: nombreLimpio,
+                                                marca: item.marca, // Pasar la marca
                                                 precioUnitario: item.precioTienda || item.precioUnitario
                                             });
                                         }

@@ -13,8 +13,8 @@ export default function FilaProducto({ producto, onAgregar, onStockClick }) {
             sku: producto.id, // id -> sku
             nombre: producto.nombreCobol, // nombreCobol -> nombre
 
-            marca: producto.marca || 'N/A',
-            categoria: producto.categoria || 'N/A',
+            marca: producto.marca,
+            categoria: producto.categoria,
             precioUnitario: producto.precio || 0,
             stock: stock
         };

@@ -143,6 +143,7 @@ function App() {
             id: `${producto.id}-PENDIENTE-${Date.now()}-${index}`,
             sku: producto.id,
             nombre: `${producto.nombreCobol}`,
+            marca: producto.marca, // Agregar la marca
             precioTienda: producto.precioUnitario || 0,
             precioUnitario: producto.precioUnitario || 0,
             precioFinal: (producto.precioUnitario || 0),
@@ -228,6 +229,7 @@ const handleAgregarProductoDesdeModal = useCallback((producto, cantidad) => {
     const productoParaModalSucursal = {
         id: producto.sku,       
         nombreCobol: producto.nombre, 
+        marca: producto.marca, // Agregar la marca
         precioUnitario: producto.precioUnitario || 0, 
     };
 
@@ -238,6 +240,7 @@ const handleAgregarProductoDesdeModal = useCallback((producto, cantidad) => {
 
 
   const handleAgregarDesdeSucursal = useCallback((producto, sucursal, cantidad, originalSku) => { 
+      alert(`Agregando desde sucursal. Marca: ${producto.marca}`);
       const itemId = `${producto.id}-${sucursal.nombreSucursal}-${Date.now()}`;
       
       // usar el originalSku
@@ -247,6 +250,7 @@ const handleAgregarProductoDesdeModal = useCallback((producto, cantidad) => {
         id: itemId,
         sku: producto.id,
         nombre: producto.nombreCobol, // Nombre limpio sin sucursales
+        marca: producto.marca, // Agregar la marca
         // Precio de tienda desde BD
         precioTienda: producto.precioUnitario || 0,
         // Mantener compatibilidad
@@ -342,6 +346,7 @@ const handleAgregarProductoDesdeModal = useCallback((producto, cantidad) => {
         nuevosItems[itemExistenteIndex] = {
           ...itemExistente,
           nombre: producto.nombreCobol, // Nombre limpio sin sucursales
+          marca: producto.marca, // Agregar la marca
           cantidad: itemExistente.cantidad + cantidadTotal,
           detallesSucursales: detallesConsolidados
         };
@@ -356,6 +361,7 @@ const handleAgregarProductoDesdeModal = useCallback((producto, cantidad) => {
           id: itemId,
           sku: producto.id,
           nombre: producto.nombreCobol, // Nombre limpio sin sucursales
+          marca: producto.marca, // Agregar la marca
           precioTienda: producto.precioUnitario || 0,
           precioUnitario: producto.precioUnitario || 0,
           precioFinal: (producto.precioUnitario || 0),
@@ -401,6 +407,7 @@ const skusAgregados = useMemo(() =>
         const productoParaModal = {
           id: item.sku,
           nombreCobol: item.nombre,
+          marca: item.marca,
           precioUnitario: item.precioTienda || item.precioUnitario
         };
         
