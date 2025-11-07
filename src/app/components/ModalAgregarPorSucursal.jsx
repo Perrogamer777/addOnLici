@@ -2,8 +2,7 @@ import { useStockSucursalData } from '../hooks/useStockSucursalData';
 
 export default function ModalAgregarPorSucursal({ modalData, onClose, onAgregarDesdeSucursal }) {
 
-  const { stockSucursales, loading, error } = useStockSucursalData(modalData?.producto?.id);
-  console.log('id del producto', modalData?.producto?.id);
+  const { stockSucursales, loading, error } = useStockSucursalData(modalData?.producto?.sku);
 
   if (!modalData) return null;
 
@@ -32,8 +31,8 @@ export default function ModalAgregarPorSucursal({ modalData, onClose, onAgregarD
   
         {/* Info del Producto */}
         <div className="mb-4">
-          <h4 className="font-medium text-gray-900">{producto.nombreCobol}</h4>
-          <p className="text-sm text-gray-600">SKU: {producto.id}</p>
+          <h4 className="font-medium text-gray-900">{producto.nombre}</h4>
+          <p className="text-sm text-gray-600">SKU: {producto.sku}</p>
           <p className="text-md font-bold text-blue-600">Cantidad a agregar: {cantidad}</p>
         </div>
 

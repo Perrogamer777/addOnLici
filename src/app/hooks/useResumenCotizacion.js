@@ -102,6 +102,7 @@ export const useResumenCotizacion = (idLicitacion) => {
       });
 
       console.log("Resumen guardado correctamente");
+      console.log(itemsJsonString)
       lastSavedHashRef.current = currentHash || itemsJsonString;
       setLastSavedAt(new Date());
       setIsSaving(false);

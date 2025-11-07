@@ -27,10 +27,8 @@ export default function ProductosSolicitados({
   }, [skuRecienAgregado]);
 
   const handleBuscarClick = (descripcion, skuSolicitado = null) => {
-    // Extrae las primeras palabras como término de búsqueda 
-    const terminoBusqueda = descripcion.split(' ').slice(0, 2).join(' ');
     if (onBuscarProductoClick) {
-      onBuscarProductoClick(terminoBusqueda, skuSolicitado);
+      onBuscarProductoClick(descripcion, skuSolicitado);
     }
   };
 

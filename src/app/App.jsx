@@ -43,6 +43,7 @@ function App() {
   const [modalStockDataSucursal, setModalStockDataSucursal] = useState(null);
   const [isBusquedaOpen, setIsBusquedaOpen] = useState(false);
   const [initialSearchTerm, setInitialSearchTerm] = useState('');
+  const [nombreProductoOrigen, setNombreProductoOrigen] = useState('');
   const [skuSolicitadoActual, setSkuSolicitadoActual] = useState(null); 
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
   const [reporteItemsFallidos, setReporteItemsFallidos] = useState([]);
@@ -143,7 +144,8 @@ function App() {
             id: `${producto.id}-PENDIENTE-${Date.now()}-${index}`,
             sku: producto.id,
             nombre: `${producto.nombreCobol}`,
-            marca: producto.marca, // Agregar la marca
+            marca: producto.marca,
+            categoria: producto.categoria,
             precioTienda: producto.precioUnitario || 0,
             precioUnitario: producto.precioUnitario || 0,
             precioFinal: (producto.precioUnitario || 0),
@@ -215,6 +217,7 @@ function App() {
   const handleBuscarProductoClick = useCallback((terminoBusqueda, skuSolicitado = null) => {
     console.log("Buscar producto clickeado con término:", terminoBusqueda); 
     setInitialSearchTerm(terminoBusqueda); 
+    setNombreProductoOrigen(terminoBusqueda);
     setSkuSolicitadoActual(skuSolicitado); // Guardar el SKU solicitado si se está reemplazando
     setIsBusquedaOpen(true); 
   }, []); 
@@ -229,7 +232,8 @@ const handleAgregarProductoDesdeModal = useCallback((producto, cantidad) => {
     const productoParaModalSucursal = {
         id: producto.sku,       
         nombreCobol: producto.nombre, 
-        marca: producto.marca, // Agregar la marca
+        marca: producto.marca,
+        categoria: producto.categoria,
         precioUnitario: producto.precioUnitario || 0, 
     };
 
@@ -240,17 +244,17 @@ const handleAgregarProductoDesdeModal = useCallback((producto, cantidad) => {
 
 
   const handleAgregarDesdeSucursal = useCallback((producto, sucursal, cantidad, originalSku) => { 
-      alert(`Agregando desde sucursal. Marca: ${producto.marca}`);
-      const itemId = `${producto.id}-${sucursal.nombreSucursal}-${Date.now()}`;
+      const itemId = `${producto.sku}-${sucursal.nombreSucursal}-${Date.now()}`;
       
       // usar el originalSku
       const skuFinal = skuSolicitadoActual || originalSku;
       
       const nuevoItem = {
         id: itemId,
-        sku: producto.id,
-        nombre: producto.nombreCobol, // Nombre limpio sin sucursales
-        marca: producto.marca, // Agregar la marca
+        sku: producto.sku,
+        nombre: producto.nombre, // Nombre limpio sin sucursales
+        marca: producto.marca,
+        categoria: producto.categoria,
         // Precio de tienda desde BD
         precioTienda: producto.precioUnitario || 0,
         // Mantener compatibilidad
@@ -346,7 +350,8 @@ const handleAgregarProductoDesdeModal = useCallback((producto, cantidad) => {
         nuevosItems[itemExistenteIndex] = {
           ...itemExistente,
           nombre: producto.nombreCobol, // Nombre limpio sin sucursales
-          marca: producto.marca, // Agregar la marca
+          marca: producto.marca,
+          categoria: producto.categoria,
           cantidad: itemExistente.cantidad + cantidadTotal,
           detallesSucursales: detallesConsolidados
         };
@@ -361,7 +366,8 @@ const handleAgregarProductoDesdeModal = useCallback((producto, cantidad) => {
           id: itemId,
           sku: producto.id,
           nombre: producto.nombreCobol, // Nombre limpio sin sucursales
-          marca: producto.marca, // Agregar la marca
+          marca: producto.marca,
+          categoria: producto.categoria,
           precioTienda: producto.precioUnitario || 0,
           precioUnitario: producto.precioUnitario || 0,
           precioFinal: (producto.precioUnitario || 0),
@@ -404,27 +410,20 @@ const skusAgregados = useMemo(() =>
       // Si el item tiene sucursal pendiente (null) y se incrementa cantidad desde 0
       if (item && item.sucursal === null && item.cantidad === 0 && nuevaCantidad > 0) {
         // Abrir modal de sucursales para asignar
-        const productoParaModal = {
-          id: item.sku,
-          nombreCobol: item.nombre,
-          marca: item.marca,
-          precioUnitario: item.precioTienda || item.precioUnitario
-        };
-        
         setModalStockDataSucursal({
-          producto: productoParaModal,
+          producto: item,
           cantidad: nuevaCantidad,
           originalSku: item.originalSolicitadoSku,
           itemIdPendiente: itemId
         });
       } else {
-        setItemsCotizacion(prev => prev.map(i => i.id === itemId ? { ...i, cantidad: nuevaCantidad } : i));
+        setItemsCotizacion(prev => prev.map(i => i.id === itemId ? { ...i, cantidad: nuevaCantidad, categoria: i.categoria } : i));
       }
   }, [itemsCotizacion]);
   
   const handleUpdatePrecioFinal = useCallback((itemId, nuevoPrecio) => {
     const precioNumber = Number.isFinite(nuevoPrecio) ? nuevoPrecio : 0;
-    setItemsCotizacion(prev => prev.map(item => item.id === itemId ? { ...item, precioFinal: precioNumber } : item));
+    setItemsCotizacion(prev => prev.map(item => item.id === itemId ? { ...item, precioFinal: precioNumber, categoria: item.categoria } : item));
   }, []);
 
 
@@ -519,6 +518,8 @@ const skusAgregados = useMemo(() =>
         onClose={() => setIsBusquedaOpen(false)}
         onProductoSeleccionado={handleAgregarProductoDesdeModal} 
         onStockClick={handleShowStock} 
+        initialSearchTerm={initialSearchTerm}
+        nombreProductoOrigen={nombreProductoOrigen}
       />
       {/* Modal de Reporte de Agregado Automático */}
       <ModalReporteAgregado
