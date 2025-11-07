@@ -313,6 +313,7 @@ export default function ResumenCotizacion({
                                                 id: item.sku,
                                                 nombreCobol: nombreLimpio,
                                                 marca: item.marca, // Pasar la marca
+                                                categoria: item.categoria, // Pasar la categoría para preservar en agregados por sucursal
                                                 precioUnitario: item.precioTienda || item.precioUnitario
                                             });
                                         }
@@ -377,7 +378,6 @@ export default function ResumenCotizacion({
                     <span>${Math.round(total).toLocaleString('es-CL')}</span>
                 </div>
                 <button 
-                    onClick={handleGenerarCotizacion}
                     className="w-full mt-4 p-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition-colors"
                 >
                     Generar y Enviar Cotización
