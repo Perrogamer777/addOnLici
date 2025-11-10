@@ -8,9 +8,16 @@ export const useObtenerSugerencia = () => {
   const client = useClient();
 
   const obtenerSugerencia = useCallback(async (itemSolicitado) => {
-
+    console.log(" [useObtenerSugerencia] Iniciando búsqueda para:", itemSolicitado);
+    
     if (!client) {
+      console.error("[useObtenerSugerencia] ZAF Client no está listo");
       throw new Error("ZAF Client no está listo.");
+    }
+
+    if (!itemSolicitado || !itemSolicitado.descripcion) {
+      console.error(" [useObtenerSugerencia] ItemSolicitado o descripción faltante:", itemSolicitado);
+      throw new Error("ItemSolicitado o descripción faltante");
     }
 
     try {
@@ -18,11 +25,21 @@ export const useObtenerSugerencia = () => {
           descripcion: itemSolicitado.descripcion
       });
 
+      const url = `${API_BASE_URL}/catalogo/sugerencia-directa?${params.toString()}`;
+      console.log(" [useObtenerSugerencia] URL de consulta:", url);
+
       const productoTop1 = await client.request({
-        url: `${API_BASE_URL}/catalogo/sugerencia-directa?${params.toString()}`,
+        url: url,
         type: 'GET',
         cors: true
       });
+
+      console.log(" [useObtenerSugerencia] Respuesta del API:", productoTop1);
+
+      if (!productoTop1 || !productoTop1.id) {
+        console.warn(" [useObtenerSugerencia] Producto no encontrado o respuesta inválida:", productoTop1);
+        return null;
+      }
 
       const productoTransformado = {
         id: productoTop1.id,
@@ -34,16 +51,23 @@ export const useObtenerSugerencia = () => {
         categoria: productoTop1.categoria
       };
       
-      return {
+      const resultado = {
         producto: productoTransformado,
         cantidad: itemSolicitado.cantidad,
         originalSku: itemSolicitado.sku
       };
 
-    } catch (err) {
+      console.log("[useObtenerSugerencia] Resultado transformado:", resultado);
+      return resultado;
 
-        
-      console.warn("No se encontró sugerencia directa (o hubo un error):", err);
+    } catch (err) {
+      console.error(" [useObtenerSugerencia] Error en la búsqueda:", err);
+      console.error(" [useObtenerSugerencia] Detalles del error:", {
+        message: err.message,
+        status: err.status,
+        responseJSON: err.responseJSON,
+        itemSolicitado: itemSolicitado
+      });
       return null; 
     }
   }, [client]); 

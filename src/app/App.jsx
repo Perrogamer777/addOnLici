@@ -131,8 +131,13 @@ function App() {
       return;
     }
 
-    const promesas = itemsParaBuscar.map(item => obtenerSugerencia(item));
+    console.log(" [handleAgregarTodasSugerencias] Iniciando búsqueda masiva para items:", itemsParaBuscar);
+    const promesas = itemsParaBuscar.map((item, index) => {
+      console.log(` [handleAgregarTodasSugerencias] Item ${index + 1}/${itemsParaBuscar.length}:`, item);
+      return obtenerSugerencia(item);
+    });
     const resultados = await Promise.allSettled(promesas);
+    console.log(" [handleAgregarTodasSugerencias] Resultados de búsqueda masiva:", resultados);
     const itemsNuevosParaCotizacion = [];
     const itemsFallidosParaReporte = []; 
 
@@ -198,10 +203,12 @@ function App() {
   }, []);
 
   const handleSugerenciaClick = async (itemSolicitado) => {
+    console.log(" [handleSugerenciaClick] Iniciando búsqueda individual para:", itemSolicitado);
     setIsLoadingSugerencia(itemSolicitado.sku);
     
     try {
       const resultado = await obtenerSugerencia(itemSolicitado);
+      console.log(" [handleSugerenciaClick] Resultado obtenido:", resultado);
       if (resultado && resultado.producto) {
         const { producto, cantidad, originalSku } = resultado;
         
@@ -215,20 +222,27 @@ function App() {
             
             if (response.ok) {
               const stockSucursales = await response.json();
+              console.log(" [handleSugerenciaClick] Stock por sucursales:", stockSucursales);
               
               if (stockSucursales && stockSucursales.length > 0) {
                 // Filtrar sucursales con stock disponible
                 const sucursalesConStock = stockSucursales.filter(s => s.stock > 0);
+                console.log(" [handleSugerenciaClick] Sucursales con stock:", sucursalesConStock);
+                console.log(" [handleSugerenciaClick] Cantidad solicitada:", cantidad);
                 
                 if (sucursalesConStock.length > 0) {
                   // Distribuir la cantidad automáticamente entre las sucursales con stock
                   let cantidadRestante = cantidad;
                   const sucursalesSeleccionadas = [];
                   
+                  console.log("[handleSugerenciaClick] Iniciando distribución. Cantidad restante:", cantidadRestante);
+                  
                   for (const sucursal of sucursalesConStock) {
                     if (cantidadRestante <= 0) break;
                     
                     const cantidadParaEstaSucursal = Math.min(cantidadRestante, sucursal.stock);
+                    console.log(` [handleSugerenciaClick] Sucursal ${sucursal.nombreSucursal}: stock=${sucursal.stock}, asignar=${cantidadParaEstaSucursal}`);
+                    
                     if (cantidadParaEstaSucursal > 0) {
                       sucursalesSeleccionadas.push({
                         sucursal: {
@@ -237,8 +251,12 @@ function App() {
                         cantidad: cantidadParaEstaSucursal
                       });
                       cantidadRestante -= cantidadParaEstaSucursal;
+                      console.log(`[handleSugerenciaClick] Sucursal agregada. Cantidad restante: ${cantidadRestante}`);
                     }
                   }
+                  
+                  console.log("[handleSugerenciaClick] Sucursales seleccionadas final:", sucursalesSeleccionadas);
+                  console.log("[handleSugerenciaClick] Total unidades a agregar:", sucursalesSeleccionadas.reduce((total, s) => total + s.cantidad, 0));
                   
                   if (sucursalesSeleccionadas.length > 0) {
                     // Agregar producto automáticamente con el originalSku del item solicitado
@@ -249,30 +267,129 @@ function App() {
                     handleAgregarDesdeMultiplesSucursales(productoConOriginal, sucursalesSeleccionadas);
                     
                     // Mostrar mensaje de éxito
-                    console.log(`Producto sugerido agregado: ${producto.nombreCobol} (${sucursalesSeleccionadas.reduce((total, s) => total + s.cantidad, 0)} unidades)`);
+                    const totalAgregado = sucursalesSeleccionadas.reduce((total, s) => total + s.cantidad, 0);
+                    console.log(` Producto sugerido agregado: ${producto.nombreCobol} (${totalAgregado}/${cantidad} unidades)`);
+                    
+                    // Si no se pudo agregar la cantidad completa, mostrar advertencia
+                    if (totalAgregado < cantidad) {
+                      console.warn(`Solo se agregaron ${totalAgregado} de ${cantidad} unidades solicitadas debido a stock limitado`);
+                    }
                   } else {
-                    console.log("No hay stock suficiente en ninguna sucursal para la sugerencia");
-                    handleBuscarProductoClick(itemSolicitado.descripcion, itemSolicitado.sku);
+
+                    const productoConCero = {
+                      id: `${producto.id}-INDIVIDUAL-${Date.now()}`,
+                      sku: producto.id,
+                      nombre: producto.nombreCobol,
+                      marca: producto.marca,
+                      categoria: producto.categoria,
+                      precioTienda: producto.precioUnitario || 0,
+                      precioUnitario: producto.precioUnitario || 0,
+                      precioFinal: producto.precioUnitario || 0,
+                      cantidad: 0, // Cantidad inicial en 0 para gestión manual
+                      originalSolicitadoSku: originalSku,
+                      originalSolicitadoNombre: itemSolicitado.descripcion,
+                      cantidadSolicitada: cantidad,
+                      categoria: producto.categoria
+                    };
+                    setItemsCotizacion(prev => [...prev, productoConCero]);
                   }
                 } else {
-                  console.log("El producto sugerido no tiene stock disponible");
-                  setSkusSinSugerencia(prev => new Set([...prev, itemSolicitado.sku]));
+
+                  const productoConCero = {
+                    id: `${producto.id}-INDIVIDUAL-${Date.now()}`,
+                    sku: producto.id,
+                    nombre: producto.nombreCobol,
+                    marca: producto.marca,
+                    categoria: producto.categoria,
+                    precioTienda: producto.precioUnitario || 0,
+                    precioUnitario: producto.precioUnitario || 0,
+                    precioFinal: producto.precioUnitario || 0,
+                    cantidad: 0, // Cantidad inicial en 0
+                    originalSolicitadoSku: originalSku,
+                    originalSolicitadoNombre: itemSolicitado.descripcion,
+                    cantidadSolicitada: cantidad,
+                    categoria: producto.categoria
+                  };
+                  setItemsCotizacion(prev => [...prev, productoConCero]);
+                  console.log("✅ Producto agregado con cantidad 0 - usar modal de gestión para asignar stock");
                 }
               } else {
-                console.log("No se pudieron obtener las sucursales del producto sugerido");
-                setSkusSinSugerencia(prev => new Set([...prev, itemSolicitado.sku]));
+                const productoConCero = {
+                  id: `${producto.id}-INDIVIDUAL-${Date.now()}`,
+                  sku: producto.id,
+                  nombre: producto.nombreCobol,
+                  marca: producto.marca,
+                  categoria: producto.categoria,
+                  precioTienda: producto.precioUnitario || 0,
+                  precioUnitario: producto.precioUnitario || 0,
+                  precioFinal: producto.precioUnitario || 0,
+                  cantidad: 0,
+                  originalSolicitadoSku: originalSku,
+                  originalSolicitadoNombre: itemSolicitado.descripcion,
+                  cantidadSolicitada: cantidad,
+                  categoria: producto.categoria
+                };
+                setItemsCotizacion(prev => [...prev, productoConCero]);
+                console.log("✅ Producto agregado con cantidad 0 - usar modal de gestión para asignar stock");
               }
             } else {
-              console.log("Error al obtener stock por sucursal del producto sugerido");
-              setSkusSinSugerencia(prev => new Set([...prev, itemSolicitado.sku]));
+
+              // Agregar producto con cantidad 0
+              const productoConCero = {
+                id: `${producto.id}-INDIVIDUAL-${Date.now()}`,
+                sku: producto.id,
+                nombre: producto.nombreCobol,
+                marca: producto.marca,
+                categoria: producto.categoria,
+                precioTienda: producto.precioUnitario || 0,
+                precioUnitario: producto.precioUnitario || 0,
+                precioFinal: producto.precioUnitario || 0,
+                cantidad: 0,
+                originalSolicitadoSku: originalSku,
+                originalSolicitadoNombre: itemSolicitado.descripcion,
+                cantidadSolicitada: cantidad,
+                categoria: producto.categoria
+              };
+              setItemsCotizacion(prev => [...prev, productoConCero]);
+              console.log("✅ Producto agregado con cantidad 0 - usar modal de gestión para asignar stock");
             }
           } catch (stockError) {
-            console.error("Error al obtener stock por sucursal:", stockError);
-            setSkusSinSugerencia(prev => new Set([...prev, itemSolicitado.sku]));
+
+            // Agregar producto con cantidad 0
+            const productoConCero = {
+              id: `${producto.id}-INDIVIDUAL-${Date.now()}`,
+              sku: producto.id,
+              nombre: producto.nombreCobol,
+              marca: producto.marca,
+              categoria: producto.categoria,
+              precioTienda: producto.precioUnitario || 0,
+              precioUnitario: producto.precioUnitario || 0,
+              precioFinal: producto.precioUnitario || 0,
+              cantidad: 0,
+              originalSolicitadoSku: originalSku,
+              originalSolicitadoNombre: itemSolicitado.descripcion,
+              cantidadSolicitada: cantidad,
+              categoria: producto.categoria
+            };
+            setItemsCotizacion(prev => [...prev, productoConCero]);
           }
         } else {
-          console.log("El producto sugerido no tiene stock disponible");
-          setSkusSinSugerencia(prev => new Set([...prev, itemSolicitado.sku]));
+          const productoConCero = {
+            id: `${producto.id}-INDIVIDUAL-${Date.now()}`,
+            sku: producto.id,
+            nombre: producto.nombreCobol,
+            marca: producto.marca,
+            categoria: producto.categoria,
+            precioTienda: producto.precioUnitario || 0,
+            precioUnitario: producto.precioUnitario || 0,
+            precioFinal: producto.precioUnitario || 0,
+            cantidad: 0,
+            originalSolicitadoSku: originalSku,
+            originalSolicitadoNombre: itemSolicitado.descripcion,
+            cantidadSolicitada: cantidad,
+            categoria: producto.categoria
+          };
+          setItemsCotizacion(prev => [...prev, productoConCero]);
         }
       } else {
         // Si no hay sugerencia, marcar como sin sugerencia
