@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { generarPdf } from '../services/generarPdf';
 import { generarExcelResumen } from '../services/generarExcelResumen';
+import ModalGestionarCantidades from './ModalGestionarCantidades';
 
 const TrashIcon = () => <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>;
 const PDFIcon = () => (
@@ -38,20 +39,36 @@ export default function ResumenCotizacion({
 }) {
     const [saveState, setSaveState] = useState('idle'); 
     const [confirmarEliminarTodos, setConfirmarEliminarTodos] = useState(false);
+    const [modalGestionarOpen, setModalGestionarOpen] = useState(false);
+    const [productoSeleccionado, setProductoSeleccionado] = useState(null);
     
     // Calcular neto usando precioFinal si está definido, si no, usar precio de tienda
     const neto = items.reduce((acc, item) => {
         const unit = (item.precioFinal ?? item.precioTienda ?? item.precioUnitario ?? 0);
         return acc + unit * item.cantidad;
     }, 0);
-    const total = neto * 1.19;
-    const iva = total - neto;
+    const total = neto;
+    const iva = total / 1.19;
 
     const handleCantidadChange = (itemId, nuevaCantidad) => {
         if (nuevaCantidad <= 0) {
             onRemove(itemId);
         } else {
             onUpdateCantidad(itemId, nuevaCantidad);
+        }
+    };
+
+    const handleGestionarCantidades = (producto) => {
+        setProductoSeleccionado(producto);
+        setModalGestionarOpen(true);
+    };
+
+    const handleUpdateCantidades = (itemId, totalCantidad, detallesSucursales) => {
+        if (totalCantidad <= 0) {
+            onRemove(itemId);
+        } else {
+            // Actualizar cantidad total y detalles de sucursales
+            onUpdateCantidad(itemId, totalCantidad, detallesSucursales);
         }
     };
 
@@ -290,37 +307,13 @@ export default function ResumenCotizacion({
                             <div className="flex items-center gap-2">
                                 <button
                                     type="button"
-                                    onClick={() => handleCantidadChange(item.id, item.cantidad - 1)}
-                                    className="w-8 h-8 rounded-full border border-gray-300 flex items-center justify-center hover:bg-gray-100 text-lg font-bold"
+                                    onClick={() => handleGestionarCantidades(item)}
+                                    className="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium flex items-center gap-2"
                                 >
-                                    −
-                                </button>
-                                
-                                <input
-                                    value={item.cantidad}
-                                    onChange={(e) => handleCantidadChange(item.id, parseInt(e.target.value) || 1)}
-                                    className="w-12 text-center border border-gray-300 rounded px-2 py-1 text-sm"
-                                />
-                                
-                                <button
-                                    type="button"
-                                    onClick={() => {
-                                        // Abrir modal de stock para agregar desde sucursales
-                                        if (onOpenStockModal) {
-                                            // Limpiar el nombre del producto si tiene 
-                                            const nombreLimpio = item.nombre.replace(/\s*\(Suc\.\s+[^)]+\)\s*$/, '');
-                                            onOpenStockModal({
-                                                id: item.sku,
-                                                nombreCobol: nombreLimpio,
-                                                marca: item.marca, // Pasar la marca
-                                                categoria: item.categoria, // Pasar la categoría para preservar en agregados por sucursal
-                                                precioUnitario: item.precioTienda || item.precioUnitario
-                                            });
-                                        }
-                                    }}
-                                    className="w-8 h-8 rounded-full border border-gray-300 flex items-center justify-center hover:bg-gray-100 text-lg font-bold"
-                                >
-                                    +
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4" />
+                                    </svg>
+                                    Gestionar
                                 </button>
                             </div>
                             
@@ -404,6 +397,19 @@ export default function ResumenCotizacion({
                     </div>
                 )}
             </div>
+
+            {/* Modal para gestionar cantidades */}
+            <ModalGestionarCantidades
+                isOpen={modalGestionarOpen}
+                onClose={() => {
+                    setModalGestionarOpen(false);
+                    setProductoSeleccionado(null);
+                }}
+                producto={productoSeleccionado}
+                onUpdateCantidades={handleUpdateCantidades}
+                onOpenStockModal={onOpenStockModal}
+                itemsCotizacion={items}
+            />
         </aside>
     );
 }

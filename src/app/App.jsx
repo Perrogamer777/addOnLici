@@ -530,8 +530,15 @@ const skusAgregados = useMemo(() =>
       setItemsCotizacion([]);
   }, []);
   
-  const handleUpdateCantidad = useCallback((itemId, nuevaCantidad) => {
-      setItemsCotizacion(prev => prev.map(i => i.id === itemId ? { ...i, cantidad: nuevaCantidad, categoria: i.categoria } : i));
+  const handleUpdateCantidad = useCallback((itemId, nuevaCantidad, detallesSucursales) => {
+      setItemsCotizacion(prev => prev.map(i => 
+          i.id === itemId ? { 
+              ...i, 
+              cantidad: nuevaCantidad, 
+              categoria: i.categoria,
+              detallesSucursales: detallesSucursales || i.detallesSucursales
+          } : i
+      ));
   }, []);
   
   const handleUpdatePrecioFinal = useCallback((itemId, nuevoPrecio) => {
