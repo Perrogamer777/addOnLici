@@ -243,8 +243,6 @@ export default function ModalGestionarCantidades({
                                                                 </button>
                                                                 
                                                                 <input
-                                                                    type="number"
-                                                                    min="0"
                                                                     max={stockDisponible}
                                                                     value={cantidadSeleccionada}
                                                                     onChange={(e) => {

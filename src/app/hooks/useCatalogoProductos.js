@@ -19,7 +19,8 @@ export const useCatalogoProductos = (
 
   useEffect(() => {
 
-    if(!rubroId && !lineaId && !familiaId){
+    // Permitir búsqueda si hay término de búsqueda O si hay filtros seleccionados
+    if(!submittedSearchTerm && !rubroId && !lineaId && !familiaId){
       setProductos([]);
       setTotalPages(1);
       setLoading(false);
