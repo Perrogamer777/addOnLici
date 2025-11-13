@@ -692,7 +692,7 @@ const skusAgregados = useMemo(() =>
       </div>
     );
   }
-
+  
   return (
     <>
       <main ref={mainRef} className="...">

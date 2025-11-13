@@ -57,12 +57,12 @@ export const useObtenerSugerencia = () => {
         originalSku: itemSolicitado.sku
       };
 
-      console.log("[useObtenerSugerencia] Resultado transformado:", resultado);
+      console.log("(useObtenerSugerencia) Resultado transformado:", resultado);
       return resultado;
 
     } catch (err) {
-      console.error(" [useObtenerSugerencia] Error en la búsqueda:", err);
-      console.error(" [useObtenerSugerencia] Detalles del error:", {
+      console.error(" (useObtenerSugerencia) Error en la búsqueda:", err);
+      console.error(" (useObtenerSugerencia) Detalles del error:", {
         message: err.message,
         status: err.status,
         responseJSON: err.responseJSON,

@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import FilaProducto from './FilaProducto';
 import { useRulifas } from '../hooks/useRulifasData';
 import { useCatalogoProductos } from '../hooks/useCatalogoProductos';
+import { useSugerenciasBusqueda } from '../hooks/useSugerenciasBusqueda';
 
 const itemsPorPagina = 10;
 
@@ -43,6 +44,14 @@ export default function ModalBusquedaProductos({
     selectedFamilia,
     soloConStock
   );
+
+  // hook de Sugerencias
+  const {
+    sugerencias,
+    loadingSugerencias,
+    buscarSugerencias,
+    limpiarSugerencias
+  } = useSugerenciasBusqueda();
 
   const totalPages = apiTotalPages || 1;
 
@@ -93,6 +102,18 @@ export default function ModalBusquedaProductos({
     setCurrentPage(1);
   }
 
+  // Efecto para buscar sugerencias cuando no hay productos encontrados
+  useEffect(() => {
+    if (submittedSearchTerm && 
+        !loadingCatalogo && 
+        catalogoProductos.length === 0 && 
+        !selectedRubro && !selectedLinea && !selectedFamilia) {
+      console.log("No se encontraron productos, buscando sugerencias para:", submittedSearchTerm);
+      buscarSugerencias(submittedSearchTerm);
+    } else {
+      limpiarSugerencias();
+    }
+  }, [submittedSearchTerm, loadingCatalogo, catalogoProductos.length, selectedRubro, selectedLinea, selectedFamilia, buscarSugerencias, limpiarSugerencias]);
 
     useEffect(() => {
    
@@ -195,11 +216,13 @@ export default function ModalBusquedaProductos({
 
         {/* Tabla de Productos */}
         <div className="flex-1 overflow-hidden flex flex-col">
-          {loadingCatalogo ? (
+          {loadingCatalogo || loadingSugerencias ? (
              <div className="flex-1 flex items-center justify-center">
                <div className="flex items-center gap-3">
                  <div className="w-8 h-8 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div>
-                 <span className="text-gray-600">Buscando productos...</span>
+                 <span className="text-gray-600">
+                   {loadingCatalogo ? 'Buscando productos...' : 'Buscando sugerencias...'}
+                 </span>
                </div>
              </div>
           ) : errorCatalogo ? (
@@ -219,17 +242,43 @@ export default function ModalBusquedaProductos({
                    </tr>
                  </thead>
                  <tbody className="divide-y divide-gray-200 bg-white">
-                   {catalogoProductos.length === 0 ? (
-                     <tr><td colSpan="7" className="p-8 text-center text-gray-500"><div className="flex flex-col items-center gap-3"><svg className="w-12 h-12 text-gray-300" /*...*/></svg><p>Busca un producto</p></div></td></tr>
+                   {catalogoProductos.length === 0 && sugerencias.length === 0 ? (
+                     <tr><td colSpan="7" className="p-8 text-center text-gray-500">
+                       <div className="flex flex-col items-center gap-3">
+                         <svg className="w-12 h-12 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                         </svg>
+                         <p>{submittedSearchTerm ? 'No se encontraron productos' : 'Busca un producto'}</p>
+                       </div>
+                     </td></tr>
                    ) : (
-                     catalogoProductos.map(p => (
-                       <FilaProducto
-                         key={p.id} 
-                         producto={p}
-                         onAgregar={onProductoSeleccionado} 
-                         onStockClick={onStockClick} 
-                       />
-                     ))
+                     <>
+                       {catalogoProductos.map(p => (
+                         <FilaProducto
+                           key={p.id} 
+                           producto={p}
+                           onAgregar={onProductoSeleccionado} 
+                           onStockClick={onStockClick} 
+                         />
+                       ))}
+                       {sugerencias.length > 0 && catalogoProductos.length === 0 && (
+                         <>
+                           <tr>
+                             <td colSpan="7" className="px-4 py-3 bg-blue-50 text-blue-800 text-sm font-medium">
+                              ¿Quisiste decir?
+                             </td>
+                           </tr>
+                           {sugerencias.map(sugerencia => (
+                             <FilaProducto
+                               key={`sugerencia-${sugerencia.id}`} 
+                               producto={sugerencia}
+                               onAgregar={onProductoSeleccionado} 
+                               onStockClick={onStockClick} 
+                             />
+                           ))}
+                         </>
+                       )}
+                     </>
                    )}
                  </tbody>
                </table>
