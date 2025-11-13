@@ -75,6 +75,12 @@ export default function ModalBusquedaProductos({
   const handleSearchSubmit = () => {
     setSubmittedSearchTerm(searchTerm);
     setCurrentPage(1);
+    // Limpiar filtros cuando se hace una búsqueda por término
+    if (searchTerm.trim()) {
+      setSelectedRubro('');
+      setSelectedLinea('');
+      setSelectedFamilia('');
+    }
   }
   const handleKeyPress = (e) => {
     if (e.key === 'Enter') {
@@ -91,14 +97,16 @@ export default function ModalBusquedaProductos({
     useEffect(() => {
    
     if (isOpen) {
-      const initialUpper = initialSearchTerm?.toUpperCase() || '';
       setSearchTerm('');
-      setSubmittedSearchTerm(initialUpper); 
+      setSubmittedSearchTerm(''); // No ejecutar búsqueda automática
       setCurrentPage(1);
       setSoloConStock(true);
-    
+      // Limpiar filtros al abrir
+      setSelectedRubro('');
+      setSelectedLinea('');
+      setSelectedFamilia('');
     }
-  }, [initialSearchTerm, isOpen]);
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
@@ -188,7 +196,12 @@ export default function ModalBusquedaProductos({
         {/* Tabla de Productos */}
         <div className="flex-1 overflow-hidden flex flex-col">
           {loadingCatalogo ? (
-             <div className="flex-1 flex items-center justify-center text-gray-500">Cargando productos...</div>
+             <div className="flex-1 flex items-center justify-center">
+               <div className="flex items-center gap-3">
+                 <div className="w-8 h-8 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div>
+                 <span className="text-gray-600">Buscando productos...</span>
+               </div>
+             </div>
           ) : errorCatalogo ? (
              <div className="flex-1 flex items-center justify-center text-red-500">Error al cargar productos.</div>
           ) : (
@@ -207,7 +220,7 @@ export default function ModalBusquedaProductos({
                  </thead>
                  <tbody className="divide-y divide-gray-200 bg-white">
                    {catalogoProductos.length === 0 ? (
-                     <tr><td colSpan="7" className="p-8 text-center text-gray-500"><div className="flex flex-col items-center gap-3"><svg className="w-12 h-12 text-gray-300" /*...*/></svg><p>No se encontró el producto</p></div></td></tr>
+                     <tr><td colSpan="7" className="p-8 text-center text-gray-500"><div className="flex flex-col items-center gap-3"><svg className="w-12 h-12 text-gray-300" /*...*/></svg><p>Busca un producto</p></div></td></tr>
                    ) : (
                      catalogoProductos.map(p => (
                        <FilaProducto
