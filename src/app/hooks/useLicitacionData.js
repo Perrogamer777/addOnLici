@@ -22,7 +22,10 @@ export const useLicitacionData = (idLicitacion) => {
         empresaCompradora: 'Sin ID de licitación',
         fechaCierreOferta: null,
         comentariosGenerales: null,
-        linkMasDetalles: null
+        linkMasDetalles: null,
+        tipoLicitacion: null,
+        origen: null
+
       });
       return;
     }

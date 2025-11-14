@@ -1,7 +1,6 @@
-import React, { useState } from 'react';
+import React from 'react';
 
 export default function FilaProducto({ producto, onAgregar, onStockClick }) {
-    const [cantidad, setCantidad] = useState(1);
 
 
     const stock = producto.stockTotal || 0; 
@@ -18,8 +17,7 @@ export default function FilaProducto({ producto, onAgregar, onStockClick }) {
             precioUnitario: producto.precio || 0,
             stock: stock
         };
-        onAgregar(productoParaCotizacion, cantidad);
-        setCantidad(1); 
+        onAgregar(productoParaCotizacion, 1); // Cantidad fija de 1
     };
 
 
@@ -57,12 +55,11 @@ export default function FilaProducto({ producto, onAgregar, onStockClick }) {
             </td>
             
             {/* Columna ACCIONES*/}
-            <td className="p-3 flex items-center gap-2">
-                <input type="number" min="1" value={cantidad} onChange={(e) => setCantidad(Number(e.target.value))} className="w-16 p-1 border rounded-md text-center" />
+            <td className="p-3 text-center">
                 <button 
                     type="button" 
                     onClick={handleAgregarClick} 
-                    className="px-3 py-1 bg-green-500 text-white text-xs font-semibold rounded-md hover:bg-green-600">
+                    className="px-4 py-2 bg-green-500 text-white text-sm font-semibold rounded-md hover:bg-green-600 transition-colors">
                     Agregar
                 </button>
             </td>

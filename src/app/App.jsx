@@ -696,6 +696,7 @@ const skusAgregados = useMemo(() =>
   return (
     <>
       <main ref={mainRef} className="...">
+        <h1>{licitacionData?.tipoLicitacion || "Licitación"} desde {licitacionData?.origen || "Desconocido"}</h1> 
         <HeaderInfo info={licitacionData} />
         <br />
         {/* Contenedor principal */}

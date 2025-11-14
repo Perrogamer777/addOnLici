@@ -1,9 +1,10 @@
 // /components/ModalBusquedaProductos.jsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import FilaProducto from './FilaProducto';
 import { useRulifas } from '../hooks/useRulifasData';
 import { useCatalogoProductos } from '../hooks/useCatalogoProductos';
 import { useSugerenciasBusqueda } from '../hooks/useSugerenciasBusqueda';
+import { useSugerenciasEnTiempoReal } from '../hooks/useSugerenciasEnTiempoReal';
 
 const itemsPorPagina = 10;
 
@@ -53,6 +54,18 @@ export default function ModalBusquedaProductos({
     limpiarSugerencias
   } = useSugerenciasBusqueda();
 
+  // hook de Sugerencias en Tiempo Real
+  const {
+    sugerencias: sugerenciasEnTiempoReal,
+    loading: loadingSugerenciasRT,
+    mostrarSugerencias,
+    buscarSugerencias: buscarSugerenciasRT,
+    ocultarSugerencias,
+    limpiarSugerencias: limpiarSugerenciasRT
+  } = useSugerenciasEnTiempoReal();
+
+  const inputRef = useRef(null);
+
   const totalPages = apiTotalPages || 1;
 
   const handleRubroChange = async (idRubro) => {
@@ -78,7 +91,15 @@ export default function ModalBusquedaProductos({
     if (newPage > 0 && newPage <= totalPages) setCurrentPage(newPage);
   };
   const handleSearchTermChange = (e) => {
-    setSearchTerm(e.target.value.toUpperCase());
+    const valor = e.target.value.toUpperCase();
+    setSearchTerm(valor);
+    
+    // Buscar sugerencias en tiempo real
+    if (valor.trim().length >= 2) {
+      buscarSugerenciasRT(valor);
+    } else {
+      limpiarSugerenciasRT();
+    }
   };
 
   const handleSearchSubmit = () => {
@@ -90,7 +111,21 @@ export default function ModalBusquedaProductos({
       setSelectedLinea('');
       setSelectedFamilia('');
     }
-  }
+    // Ocultar sugerencias al hacer la búsqueda
+    ocultarSugerencias();
+  };
+
+  const handleSugerenciaClick = (sugerencia) => {
+    setSearchTerm(sugerencia.nombreCobol);
+    setSubmittedSearchTerm(sugerencia.nombreCobol);
+    setCurrentPage(1);
+    // Limpiar filtros
+    setSelectedRubro('');
+    setSelectedLinea('');
+    setSelectedFamilia('');
+    // Ocultar sugerencias
+    ocultarSugerencias();
+  };
   const handleKeyPress = (e) => {
     if (e.key === 'Enter') {
       handleSearchSubmit();
@@ -126,8 +161,10 @@ export default function ModalBusquedaProductos({
       setSelectedRubro('');
       setSelectedLinea('');
       setSelectedFamilia('');
+      // Limpiar sugerencias
+      limpiarSugerenciasRT();
     }
-  }, [isOpen]);
+  }, [isOpen, limpiarSugerenciasRT]);
 
   if (!isOpen) return null;
 
@@ -163,13 +200,59 @@ export default function ModalBusquedaProductos({
                <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
             </div>
             <input
+              ref={inputRef}
               type="text"
               placeholder="Buscar por SKU, nombre..."
               className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm transition-all"
               value={searchTerm}
               onChange={handleSearchTermChange}
               onKeyPress={handleKeyPress}
+              onFocus={() => {
+                if (searchTerm.trim().length >= 2) {
+                  buscarSugerenciasRT(searchTerm);
+                }
+              }}
+              onBlur={() => {
+                // Delay para permitir clicks en sugerencias
+                setTimeout(() => ocultarSugerencias(), 150);
+              }}
             />
+            
+            {/* Lista de Sugerencias */}
+            {mostrarSugerencias && (
+              <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 max-h-60 overflow-y-auto">
+                {loadingSugerenciasRT ? (
+                  <div className="p-3 text-center text-gray-500 text-sm">
+                    <div className="flex items-center justify-center gap-2">
+                      <div className="w-4 h-4 border-2 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div>
+                      Buscando...
+                    </div>
+                  </div>
+                ) : sugerenciasEnTiempoReal.length > 0 ? (
+                  <>
+                    <div className="px-3 py-2 text-xs text-gray-500 bg-gray-50 border-b font-medium">
+                      Sugerencias ({sugerenciasEnTiempoReal.length})
+                    </div>
+                    {sugerenciasEnTiempoReal.map((sugerencia) => (
+                      <button
+                        key={sugerencia.id}
+                        type="button"
+                        className="w-full text-left px-3 py-2 hover:bg-blue-50 hover:text-blue-700 text-sm border-b border-gray-100 last:border-b-0 transition-colors"
+                        onClick={() => handleSugerenciaClick(sugerencia)}
+                        onMouseDown={(e) => e.preventDefault()} // Prevenir que se active onBlur
+                      >
+                        <div className="font-medium">{sugerencia.nombreCobol}</div>
+                        <div className="text-xs text-gray-500">SKU: {sugerencia.id}</div>
+                      </button>
+                    ))}
+                  </>
+                ) : (
+                  <div className="p-3 text-center text-gray-500 text-sm">
+                    No se encontraron sugerencias
+                  </div>
+                )}
+              </div>
+            )}
           </div>
           {/* Botón de búsqueda */}
           <button
