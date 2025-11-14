@@ -42,13 +42,13 @@ export default function ResumenCotizacion({
     const [modalGestionarOpen, setModalGestionarOpen] = useState(false);
     const [productoSeleccionado, setProductoSeleccionado] = useState(null);
     
-    // Calcular neto usando precioFinal si está definido, si no, usar precio de tienda
-    const neto = items.reduce((acc, item) => {
+    // Calcular totales con IVA incluido
+    const total = items.reduce((acc, item) => {
         const unit = (item.precioFinal ?? item.precioTienda ?? item.precioUnitario ?? 0);
         return acc + unit * item.cantidad;
     }, 0);
-    const total = neto;
-    const iva = total / 1.19;
+    const neto = total / 1.19;
+    const iva = total - neto;
 
     const handleCantidadChange = (itemId, nuevaCantidad) => {
         if (nuevaCantidad <= 0) {

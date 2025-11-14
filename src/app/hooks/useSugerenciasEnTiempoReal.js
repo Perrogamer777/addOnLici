@@ -23,7 +23,7 @@ export const useSugerenciasEnTiempoReal = () => {
     }
 
     if (!client) {
-      console.error("[useSugerenciasEnTiempoReal] ZAF Client no está listo");
+      console.error("ZAF Client no está listo");
       return;
     }
 
@@ -38,7 +38,7 @@ export const useSugerenciasEnTiempoReal = () => {
 
         // Usar el endpoint de búsqueda general que devuelve múltiples productos
         const url = `${API_BASE_URL}/catalogo/productos/buscar?${params.toString()}`;
-        console.log("[useSugerenciasEnTiempoReal] Buscando sugerencias para:", termino);
+        console.log("Buscando sugerencias para:", termino);
 
         let response;
         
@@ -82,7 +82,7 @@ export const useSugerenciasEnTiempoReal = () => {
         }
 
       } catch (err) {
-        console.error("[useSugerenciasEnTiempoReal] Error:", err);
+        console.error("Error:", err);
         setSugerencias([]);
         setMostrarSugerencias(false);
       } finally {

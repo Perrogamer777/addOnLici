@@ -116,7 +116,13 @@ export async function generarExcelResumen(items, infoLicitacion, totales) {
     const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
 
     const fecha = new Date();
-    const nombreArchivo = `cotizacion_${infoLicitacion?.idLicitacion || 'SinID'}_${fecha.toISOString().slice(0, 10)}.xlsx`;
+    const año = fecha.getFullYear();
+    const mes = String(fecha.getMonth() + 1).padStart(2, '0');
+    const dia = String(fecha.getDate()).padStart(2, '0');
+    const hora = String(fecha.getHours()).padStart(2, '0');
+    const minutos = String(fecha.getMinutes()).padStart(2, '0');
+    
+    const nombreArchivo = `Cotizacion_${infoLicitacion?.idLicitacion || 'SinID'}_${dia}-${mes}-${año}_${hora}-${minutos}.xlsx`;
 
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);

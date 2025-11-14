@@ -49,7 +49,7 @@ export class generarPdf {
       doc.text(new Date().toLocaleDateString('es-CL'), pageWidth - margin, footerY, { align: 'right' });
     };
 
-    // --- Información de la Licitación ---
+    // Información de la Licitación
     const drawInfoLicitacion = () => {
       let yPos = 40;
       if (infoLicitacion) {
@@ -80,7 +80,7 @@ export class generarPdf {
       return yPos;
     };
 
-    // --- Tabla de Productos ---
+    // Tabla de Productos
     const tableData = items.map(item => {
       const precioFinal = (item.precioFinal ?? item.precioTienda ?? item.precioUnitario) || 0;
       const total = item.cantidad * precioFinal;
@@ -130,7 +130,7 @@ export class generarPdf {
       }
     });
 
-    // --- Totales ---
+    // Totales
     const finalY = doc.lastAutoTable.finalY + 10;
     const totals = [
       { label: 'Neto', value: `$${Math.round(totales.neto).toLocaleString('es-CL')}` },
