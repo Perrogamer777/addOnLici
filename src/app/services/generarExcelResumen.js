@@ -13,7 +13,15 @@ export async function generarExcelResumen(items, infoLicitacion, totales) {
     titleCell.value = `Cotización para Licitación: ${infoLicitacion?.idLicitacion || 'N/A'}`;
     titleCell.font = { name: 'Calibri', size: 16, bold: true, color: { argb: 'FF2c3e50' } };
     titleCell.alignment = { vertical: 'middle', horizontal: 'center' };
-    sheet.getRow(1).height = 40;
+    sheet.getRow(1).height = 30;
+
+    // Cliente
+    sheet.mergeCells('A2:I2');
+    const clienteCell = sheet.getCell('A2');
+    clienteCell.value = `Cliente: ${infoLicitacion?.empresaCompradora || 'No especificado'}`;
+    clienteCell.font = { name: 'Calibri', size: 12, italic: true, color: { argb: 'FF6c757d' } };
+    clienteCell.alignment = { vertical: 'middle', horizontal: 'center' };
+    sheet.getRow(2).height = 25;
 
     sheet.addRow([]); 
 
